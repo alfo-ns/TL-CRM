@@ -5,7 +5,7 @@ let State = {
   plannerMode: 'lanes', contattiMode: 'persone', calY: now.getFullYear(), calM: now.getMonth(),
   detailId: null, modal: null, modalTab: 'dettagli', editId: null, form: {},
   activityDraft: '', overStage: null, dragId: null, openGroups: {}, openDossier: null,
-  opDraft: '', dossierDraft: {},
+  opDraft: '', dossierDraft: {}, sidebarOpen: false,
 };
 
 function setState(patch) {
@@ -50,6 +50,7 @@ function restoreFocus(info) {
 function render() {
   const focusInfo = captureFocus();
   const vm = computeViewModel();
+  document.getElementById('app').classList.toggle('sidebar-open', State.sidebarOpen);
   document.getElementById('nav').innerHTML = navHTML(vm);
   document.getElementById('sidebar-footer').innerHTML = footerHTML(vm);
   document.getElementById('topbar').innerHTML = topbarHTML(vm);
@@ -99,6 +100,7 @@ function actionOptionsHTML(selected) {
 
 function topbarHTML(vm) {
   return `
+    <button class="menu-btn" data-action="toggle-sidebar" aria-label="Menu">☰</button>
     <div style="min-width:0">
       <h1>${vm.viewTitle}</h1>
       <div class="sub">${vm.viewSub}</div>

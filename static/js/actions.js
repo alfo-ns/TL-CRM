@@ -15,7 +15,9 @@ function num(v) { const n = parseInt(String(v).replace(/\D/g, ''), 10); return i
 
 // -------------------------------------------------------------- click actions
 const clickActions = {
-  'nav': (t) => setState({ view: t.dataset.view }),
+  'nav': (t) => setState({ view: t.dataset.view, sidebarOpen: false }),
+  'toggle-sidebar': () => setState(s => ({ sidebarOpen: !s.sidebarOpen })),
+  'close-sidebar': () => setState({ sidebarOpen: false }),
 
   'new-company': () => setState({ modal: 'company', editId: null, form: { stage: 'prospect' } }),
   'open-detail': (t) => setState({ detailId: parseInt(t.dataset.id, 10) }),
