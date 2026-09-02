@@ -82,9 +82,8 @@ function computeViewModel() {
 
   const columns = Data.stages.map(s => {
     const deals = visible.filter(c => c.stage === s.id);
-    const isOver = State.overStage === s.id;
     return {
-      id: s.id, label: s.label, color: s.color, count: deals.length, empty: deals.length === 0, isOver,
+      id: s.id, label: s.label, color: s.color, count: deals.length, empty: deals.length === 0,
       total: H.eur(deals.reduce((a, c) => a + c.valore, 0)),
       deals: deals.map(c => {
         const people = H.contactsOf(c.id);
@@ -93,7 +92,6 @@ function computeViewModel() {
         const br = c.bridgeId ? Data.bridges.find(b => b.id === c.bridgeId) : null;
         return {
           id: c.id, nome: c.nome, settore: c.settore, dip: c.dip, valore: H.eur(c.valore), giorni: c.giorni,
-          dragging: State.dragId === c.id,
           initials: p ? H.initials(p.nome, p.cognome) : '–',
           referente: p ? p.nome + ' ' + p.cognome + (people.length > 1 ? ' +' + (people.length - 1) : '') : 'Referente da trovare',
           gestitoDa: c.gestitoDa,

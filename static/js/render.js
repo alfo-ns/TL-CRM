@@ -4,7 +4,7 @@ let State = {
   view: 'dashboard', query: '', filterStage: 'tutti', filterOp: 'tutti',
   plannerMode: 'lanes', contattiMode: 'persone', calY: now.getFullYear(), calM: now.getMonth(),
   detailId: null, modal: null, modalTab: 'dettagli', editId: null, form: {},
-  activityDraft: '', overStage: null, dragId: null, openGroups: {}, openDossier: null,
+  activityDraft: '', openGroups: {}, openDossier: null,
   opDraft: '', dossierDraft: {}, sidebarOpen: false,
 };
 
@@ -116,21 +116,26 @@ function topbarHTML(vm) {
 
 // ------------------------------------------------------------------- content
 function contentHTML(vm) {
-  switch (State.view) {
-    case 'dashboard': return dashboardHTML(vm);
-    case 'pipeline': return pipelineHTML(vm);
-    case 'planner': return plannerHTML(vm);
-    case 'contatti': return contattiHTML(vm);
-    case 'bridge': return bridgeHTML(vm);
-    case 'impostazioni': return settingsHTML(vm);
-    default: return '';
-  }
+  // Pipeline uses the full width (more kanban columns fit on wide screens);
+  // every other view is capped and centered so text/cards stay readable on ultra-wide monitors.
+  if (State.view === 'pipeline') return pipelineHTML(vm);
+  const inner = (() => {
+    switch (State.view) {
+      case 'dashboard': return dashboardHTML(vm);
+      case 'planner': return plannerHTML(vm);
+      case 'contatti': return contattiHTML(vm);
+      case 'bridge': return bridgeHTML(vm);
+      case 'impostazioni': return settingsHTML(vm);
+      default: return '';
+    }
+  })();
+  return `<div class="view-wrap">${inner}</div>`;
 }
 
 function dashboardHTML(vm) {
   const k = vm.kpi;
   return `
-  <div style="display:flex;flex-direction:column;gap:14px;max-width:1500px">
+  <div style="display:flex;flex-direction:column;gap:14px">
     <div class="grid-kpi">
       <div class="card">
         <div class="kpi-label">Aziende in pipeline</div>
@@ -240,7 +245,7 @@ function dashboardHTML(vm) {
 function pipelineHTML(vm) {
   return `<div class="kanban">
     ${vm.columns.map(col => `
-      <div class="kanban-col ${col.isOver ? 'drag-over' : ''}" data-stage="${col.id}">
+      <div class="kanban-col" data-stage="${col.id}">
         <div class="kanban-col-head">
           <span class="stage-dot" style="background:${col.color}"></span>
           <span style="font-weight:600;font-size:13px">${col.label}</span>
@@ -248,7 +253,7 @@ function pipelineHTML(vm) {
         </div>
         <div class="kanban-col-total mono">${col.total}</div>
         ${col.deals.map(d => `
-          <div class="deal-card ${d.dragging ? 'dragging' : ''}" draggable="true" data-drag-id="${d.id}" data-action="open-detail" data-id="${d.id}">
+          <div class="deal-card" data-drag-id="${d.id}" data-action="open-detail" data-id="${d.id}">
             <div class="deal-name">${esc(d.nome)}</div>
             <div class="deal-sub">${esc(d.settore)} · ${d.dip} dip.</div>
             <div class="deal-row">
