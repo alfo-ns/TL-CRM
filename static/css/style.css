@@ -20,6 +20,11 @@
 
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; background: var(--bg); }
+html {
+  /* Global size knob: every font-size/spacing in this file is in fixed px,
+     so this is the one place to make the whole UI bigger or smaller. */
+  zoom: 112%;
+}
 body {
   font-family: var(--sans);
   color: var(--text);
