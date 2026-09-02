@@ -73,6 +73,41 @@ const clickActions = {
 
   'planner-mode': (t) => setState({ plannerMode: t.dataset.mode }),
   'contatti-mode': (t) => setState({ contattiMode: t.dataset.mode }),
+  'contatti-toggle-select': () => setState(s => ({ contattiSelectMode: !s.contattiSelectMode, contattiSelected: {} })),
+  'contatti-toggle-row': (t) => {
+    const id = parseInt(t.dataset.id, 10);
+    setState(s => ({ contattiSelected: Object.assign({}, s.contattiSelected, { [id]: !s.contattiSelected[id] }) }));
+  },
+  'contatti-delete-selected': () => {
+    const ids = Object.keys(State.contattiSelected).filter(id => State.contattiSelected[id]).map(Number);
+    if (!ids.length) return;
+    if (!confirm('Eliminare ' + ids.length + ' contatti selezionati?')) return;
+    (async () => {
+      let fresh = null;
+      for (const id of ids) fresh = await Api.deleteContact(id);
+      if (fresh) { Data = fresh; render(); }
+      setState({ contattiSelectMode: false, contattiSelected: {} });
+    })();
+  },
+  'contatto-duplica': (t) => {
+    const id = parseInt(t.dataset.id, 10);
+    const p = contactById(id);
+    if (!p) return;
+    const payload = {
+      companyId: p.companyId, nome: p.nome, cognome: p.cognome + ' (copia)', ruolo: p.ruolo,
+      email: p.email, tel: p.tel, linkedin: p.linkedin, social: p.social, socialLabel: p.socialLabel,
+      note: p.note, portatoDa: p.portatoDa, gestitoDa: p.gestitoDa,
+      nextTipo: p.next ? p.next.tipo : undefined, nextData: p.next ? p.next.data : '', nextStadio: p.next ? p.next.stadio : undefined,
+      fonte: p.dossier.fonte, temperatura: p.dossier.temperatura, potere: p.dossier.potere, orario: p.dossier.orario,
+      interessi: p.dossier.interessi, competitor: p.dossier.competitor, argomentiUtili: p.dossier.argomentiUtili,
+      argomentiEvitare: p.dossier.argomentiEvitare, eventi: p.dossier.eventi, libero: p.dossier.libero,
+    };
+    mutate(Api.createContact(payload)).then((fresh) => {
+      if (!fresh) return;
+      const created = fresh.contacts.filter(c => c.companyId === p.companyId).sort((a, b) => b.id - a.id)[0];
+      setState({ detailId: p.companyId, openDossier: null, modal: 'contact', modalTab: 'dettagli', editId: created.id, form: Object.assign({}, created, created.next || {}, { nextTipo: created.next ? created.next.tipo : 'followup', nextData: created.next ? created.next.data : '', nextStadio: created.next ? created.next.stadio : created.stage }, created.dossier || {}) });
+    });
+  },
   'toggle-group': (t) => {
     const id = parseInt(t.dataset.id, 10);
     setState(s => ({ openGroups: Object.assign({}, s.openGroups, { [id]: !s.openGroups[id] }) }));
