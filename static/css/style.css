@@ -20,6 +20,11 @@
 
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; background: var(--bg); }
+html {
+  /* Global size knob: every font-size/spacing in this file is in fixed px,
+     so this is the one place to make the whole UI bigger or smaller. */
+  zoom: 112%;
+}
 body {
   font-family: var(--sans);
   color: var(--text);
@@ -35,10 +40,12 @@ button { cursor: pointer; }
 
 .mono { font-family: var(--mono); }
 
-.app { display: flex; height: 100vh; overflow: hidden; }
+.app { display: flex; height: 100vh; height: 100dvh; overflow: hidden; }
 
 /* ---------- sidebar ---------- */
 .sidebar { width: 232px; flex: 0 0 232px; background: #fff; border-right: 1px solid var(--border-strong); display: flex; flex-direction: column; }
+.sidebar-scrim { display: none; }
+.menu-btn { display: none; }
 .brand { padding: 22px 20px 18px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-soft); }
 .brand-mark { width: 28px; height: 28px; border-radius: 8px; background: var(--accent); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: 13px; }
 .brand-name { font-weight: 600; letter-spacing: -0.01em; }
@@ -61,6 +68,7 @@ button { cursor: pointer; }
 .topbar .sub { font-size: 12px; color: var(--text-dimmer); margin-top: 3px; }
 .topbar .actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .content { flex: 1; overflow: auto; padding: 22px 26px 40px; }
+.view-wrap { width: 100%; }
 
 /* ---------- form controls ---------- */
 input[type=text], input[type=date], input[type=email], input[type=tel], select, textarea {
@@ -78,7 +86,7 @@ select { background: #fff; }
 
 /* ---------- cards / kpi ---------- */
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
-.grid-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(212px, 1fr)); gap: 14px; }
+.grid-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
 .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 14px; align-items: stretch; }
 .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; align-items: stretch; }
 .kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: oklch(0.62 0.01 255); }
@@ -124,9 +132,13 @@ select { background: #fff; }
 .stage-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 .kanban-col-count { margin-left: auto; font-family: var(--mono); font-size: 11px; color: oklch(0.55 0.01 255); background: #fff; border: 1px solid var(--border); border-radius: 20px; padding: 1px 7px; }
 .kanban-col-total { font-family: var(--mono); font-size: 11px; color: oklch(0.55 0.01 255); }
-.deal-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 11px 12px; cursor: grab; box-shadow: 0 1px 2px oklch(0.2 0.01 255 / 0.05); }
+.deal-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 11px 12px; cursor: grab; box-shadow: 0 1px 2px oklch(0.2 0.01 255 / 0.05); touch-action: pan-y; }
 .deal-card:hover { border-color: oklch(0.72 0.05 255); box-shadow: 0 2px 8px oklch(0.2 0.01 255 / 0.08); }
-.deal-card.dragging { opacity: 0.45; }
+.deal-card.dragging { opacity: 0.35; }
+.deal-ghost {
+  position: fixed; z-index: 70; cursor: grabbing; box-shadow: 0 12px 32px oklch(0.2 0.01 255 / 0.28);
+  transform: rotate(-1.5deg); opacity: 0.96;
+}
 .deal-name { font-weight: 600; font-size: 13px; letter-spacing: -0.01em; }
 .deal-sub { font-size: 11px; color: var(--text-dimmer); margin-top: 2px; }
 .deal-row { display: flex; align-items: center; justify-content: space-between; margin-top: 9px; }
@@ -289,3 +301,74 @@ select { background: #fff; }
 .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
 
 .text-wrap { text-wrap: pretty; }
+
+/* ==================================================================
+   RESPONSIVE
+   Breakpoints: <=980px (tablet: sidebar off-canvas, grid a 1 colonna),
+   <=600px (mobile: tabelle -> card, topbar impilata, modal full-screen)
+   ================================================================== */
+
+@media (max-width: 980px) {
+  .menu-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border-strong);
+    background: #fff; flex: none; font-size: 16px;
+  }
+  .menu-btn:hover { background: oklch(0.96 0.004 95); }
+
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 51;
+    transform: translateX(-100%); transition: transform 0.2s ease;
+    box-shadow: 8px 0 32px oklch(0.2 0.01 255 / 0.12);
+  }
+  .app.sidebar-open .sidebar { transform: translateX(0); }
+  .app.sidebar-open .sidebar-scrim {
+    display: block; position: fixed; inset: 0; background: oklch(0.2 0.01 255 / 0.28); z-index: 50;
+  }
+
+  .topbar { padding: 12px 16px; }
+  .content { padding: 16px 16px 32px; }
+
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+
+  .table-head { display: none; }
+  .table-row {
+    display: flex; flex-wrap: wrap; gap: 4px 12px; padding: 12px 16px;
+  }
+  .table-row .person-cell { flex: 1 1 100%; }
+  .table-row > div:not(.person-cell) { font-size: 12px; }
+
+  .group-head { grid-template-columns: 1.4fr 0.8fr 0.7fr 90px; }
+  .group-head > :nth-child(3), .group-head > :nth-child(5) { display: none; }
+  .group-person { grid-template-columns: 1.1fr 1fr; row-gap: 4px; }
+  .group-person > :nth-child(3), .group-person > :nth-child(4) { display: none; }
+}
+
+@media (max-width: 600px) {
+  .topbar { flex-wrap: wrap; }
+  .topbar .actions { margin-left: 0; width: 100%; }
+  .topbar .actions input[type=text] { width: 100%; flex: 1 1 auto; }
+
+  .drawer { width: 100vw; }
+
+  .modal-scrim { padding: 0; }
+  .modal { width: 100%; height: 100%; max-height: 100vh; border-radius: 0; }
+
+  .modal-grid, .person-fields, .dossier-grid, .bridge-meta { grid-template-columns: 1fr; }
+  .modal-grid label.span2 { grid-column: span 1; }
+
+  .kpi-value { font-size: 24px; }
+  .grid-kpi { grid-template-columns: 1fr 1fr; }
+
+  .funnel-label { width: 84px; flex: 0 0 84px; }
+
+  .group-head { grid-template-columns: 1fr auto; }
+  .group-head > :nth-child(2), .group-head > :nth-child(4) { display: none; }
+
+  .cal-grid, .cal-dow { grid-template-columns: repeat(7, minmax(34px, 1fr)); }
+  .cal-cell { min-height: 64px; padding: 4px; }
+  .cal-chip .t { display: none; }
+
+  .bridge-actions { flex-wrap: wrap; }
+  .bridge-actions select { flex: 1 1 100%; }
+}

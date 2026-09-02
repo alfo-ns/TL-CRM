@@ -13,9 +13,14 @@ function contactById(id) { return Data.contacts.find(c => c.id === id); }
 function bridgeById(id) { return Data.bridges.find(b => b.id === id); }
 function num(v) { const n = parseInt(String(v).replace(/\D/g, ''), 10); return isNaN(n) ? 0 : n; }
 
+// pointer-based drag state for the kanban board (mouse, touch and pen)
+const dragCtx = { card: null, ghost: null, overCol: null, pointerId: null, started: false, suppressClick: false };
+
 // -------------------------------------------------------------- click actions
 const clickActions = {
-  'nav': (t) => setState({ view: t.dataset.view }),
+  'nav': (t) => setState({ view: t.dataset.view, sidebarOpen: false }),
+  'toggle-sidebar': () => setState(s => ({ sidebarOpen: !s.sidebarOpen })),
+  'close-sidebar': () => setState({ sidebarOpen: false }),
 
   'new-company': () => setState({ modal: 'company', editId: null, form: { stage: 'prospect' } }),
   'open-detail': (t) => setState({ detailId: parseInt(t.dataset.id, 10) }),
@@ -170,6 +175,7 @@ function wireEvents() {
   const app = document.getElementById('app');
 
   app.addEventListener('click', (e) => {
+    if (dragCtx.suppressClick) { dragCtx.suppressClick = false; return; }
     const t = e.target.closest('[data-action]');
     if (!t) return;
     const action = t.dataset.action;
@@ -232,39 +238,59 @@ function wireEvents() {
     }
   });
 
-  // ---- drag & drop (direct DOM class toggling; full render only after drop completes) ----
-  app.addEventListener('dragstart', (e) => {
+  // ---- drag & drop (Pointer Events: works for mouse, touch and pen) ----
+  app.addEventListener('pointerdown', (e) => {
+    if (e.button != null && e.button !== 0) return; // left button / primary touch only
     const card = e.target.closest('[data-drag-id]');
     if (!card) return;
-    e.dataTransfer.effectAllowed = 'move';
-    State.dragId = parseInt(card.dataset.dragId, 10);
-    card.classList.add('dragging');
+    dragCtx.card = card;
+    dragCtx.id = parseInt(card.dataset.dragId, 10);
+    dragCtx.startX = e.clientX;
+    dragCtx.startY = e.clientY;
+    dragCtx.pointerId = e.pointerId;
+    dragCtx.started = false;
+    dragCtx.suppressClick = false;
   });
-  app.addEventListener('dragend', (e) => {
-    const card = e.target.closest('[data-drag-id]');
-    if (card) card.classList.remove('dragging');
-    State.dragId = null;
-    document.querySelectorAll('.kanban-col.drag-over').forEach(el => el.classList.remove('drag-over'));
+
+  app.addEventListener('pointermove', (e) => {
+    if (dragCtx.pointerId !== e.pointerId || !dragCtx.card) return;
+    const dx = e.clientX - dragCtx.startX;
+    const dy = e.clientY - dragCtx.startY;
+    if (!dragCtx.started) {
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+      dragCtx.started = true;
+      dragCtx.suppressClick = true;
+      dragCtx.card.setPointerCapture(dragCtx.pointerId);
+      dragCtx.card.classList.add('dragging');
+      dragCtx.ghost = dragCtx.card.cloneNode(true);
+      dragCtx.ghost.classList.add('deal-ghost');
+      const r = dragCtx.card.getBoundingClientRect();
+      dragCtx.offX = dragCtx.startX - r.left;
+      dragCtx.offY = dragCtx.startY - r.top;
+      dragCtx.ghost.style.width = r.width + 'px';
+      document.body.appendChild(dragCtx.ghost);
+    }
+    dragCtx.ghost.style.left = (e.clientX - dragCtx.offX) + 'px';
+    dragCtx.ghost.style.top = (e.clientY - dragCtx.offY) + 'px';
+    dragCtx.ghost.style.pointerEvents = 'none';
+    const col = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-stage]');
+    if (dragCtx.overCol && dragCtx.overCol !== col) dragCtx.overCol.classList.remove('drag-over');
+    if (col) col.classList.add('drag-over');
+    dragCtx.overCol = col || null;
   });
-  app.addEventListener('dragover', (e) => {
-    const col = e.target.closest('[data-stage]');
-    if (!col) return;
-    e.preventDefault();
-    col.classList.add('drag-over');
-  });
-  app.addEventListener('dragleave', (e) => {
-    const col = e.target.closest('[data-stage]');
-    if (!col) return;
-    if (!col.contains(e.relatedTarget)) col.classList.remove('drag-over');
-  });
-  app.addEventListener('drop', (e) => {
-    const col = e.target.closest('[data-stage]');
-    if (!col) return;
-    e.preventDefault();
-    col.classList.remove('drag-over');
-    const stage = col.dataset.stage;
-    const dragId = State.dragId;
-    State.dragId = null;
-    if (dragId != null) mutate(Api.moveCompanyStage(dragId, stage));
-  });
+
+  function endDrag(e) {
+    if (dragCtx.pointerId !== e.pointerId) return;
+    const wasStarted = dragCtx.started;
+    if (dragCtx.card) dragCtx.card.classList.remove('dragging');
+    if (dragCtx.ghost) dragCtx.ghost.remove();
+    if (dragCtx.overCol) dragCtx.overCol.classList.remove('drag-over');
+    if (wasStarted && dragCtx.overCol) {
+      const stage = dragCtx.overCol.dataset.stage;
+      mutate(Api.moveCompanyStage(dragCtx.id, stage));
+    }
+    dragCtx.card = null; dragCtx.ghost = null; dragCtx.overCol = null; dragCtx.pointerId = null; dragCtx.started = false;
+  }
+  app.addEventListener('pointerup', endDrag);
+  app.addEventListener('pointercancel', endDrag);
 }
