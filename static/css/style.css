@@ -40,10 +40,10 @@ button { cursor: pointer; }
 
 .mono { font-family: var(--mono); }
 
-.app { display: flex; height: 100vh; height: 100dvh; overflow: hidden; }
+.app { display: flex; height: 100%; overflow: hidden; }
 
 /* ---------- sidebar ---------- */
-.sidebar { width: 232px; flex: 0 0 232px; background: #fff; border-right: 1px solid var(--border-strong); display: flex; flex-direction: column; }
+.sidebar { width: 232px; flex: 0 0 232px; background: #fff; border-right: 1px solid var(--border-strong); display: flex; flex-direction: column; overflow-y: auto; }
 .sidebar-scrim { display: none; }
 .menu-btn { display: none; }
 .brand { padding: 22px 20px 18px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border-soft); }
