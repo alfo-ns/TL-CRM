@@ -16,6 +16,10 @@ function num(v) { const n = parseInt(String(v).replace(/\D/g, ''), 10); return i
 // pointer-based drag state for the kanban board (mouse, touch and pen)
 const dragCtx = { card: null, ghost: null, overCol: null, pointerId: null, started: false, suppressClick: false };
 
+// drag state for the split-view resizer handle
+const resizeCtx = { active: false, pointerId: null };
+const MIN_DETAIL_WIDTH = 320;
+
 // holds the File object picked for import — not put in State, which is
 // re-rendered to HTML and has no business holding binary blobs
 let importFile = null;
@@ -318,6 +322,17 @@ function wireEvents() {
     }
   });
 
+  // ---- split-view resizer (Pointer Events: works for mouse, touch and pen) ----
+  app.addEventListener('pointerdown', (e) => {
+    const handle = e.target.closest('.split-resizer');
+    if (!handle) return;
+    resizeCtx.active = true;
+    resizeCtx.pointerId = e.pointerId;
+    handle.setPointerCapture(e.pointerId);
+    handle.classList.add('resizing');
+    e.preventDefault();
+  });
+
   // ---- drag & drop (Pointer Events: works for mouse, touch and pen) ----
   app.addEventListener('pointerdown', (e) => {
     if (e.button != null && e.button !== 0) return; // left button / primary touch only
@@ -333,6 +348,16 @@ function wireEvents() {
   });
 
   app.addEventListener('pointermove', (e) => {
+    if (resizeCtx.active && resizeCtx.pointerId === e.pointerId) {
+      const panel = document.getElementById('detail-panel');
+      if (panel) {
+        const maxWidth = Math.round(window.innerWidth * 0.7);
+        const width = Math.min(maxWidth, Math.max(MIN_DETAIL_WIDTH, window.innerWidth - e.clientX));
+        panel.style.flex = '0 0 ' + width + 'px';
+        panel.style.width = width + 'px';
+      }
+      return;
+    }
     if (dragCtx.pointerId !== e.pointerId || !dragCtx.card) return;
     const dx = e.clientX - dragCtx.startX;
     const dy = e.clientY - dragCtx.startY;
@@ -360,6 +385,14 @@ function wireEvents() {
   });
 
   function endDrag(e) {
+    if (resizeCtx.active && resizeCtx.pointerId === e.pointerId) {
+      resizeCtx.active = false;
+      resizeCtx.pointerId = null;
+      document.querySelectorAll('.split-resizer.resizing').forEach(el => el.classList.remove('resizing'));
+      const panel = document.getElementById('detail-panel');
+      if (panel) localStorage.setItem('detailPanelWidth', parseInt(panel.style.width, 10));
+      return;
+    }
     if (dragCtx.pointerId !== e.pointerId) return;
     const wasStarted = dragCtx.started;
     if (dragCtx.card) dragCtx.card.classList.remove('dragging');
