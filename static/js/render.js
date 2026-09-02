@@ -9,6 +9,7 @@ let State = {
   importPreview: null, importFileName: '',
   dbPathDraft: null, dbPathMessage: null,
   contattiSelectMode: false, contattiSelected: {},
+  openRowMenu: null,
 };
 
 function setState(patch) {
@@ -28,6 +29,26 @@ async function mutate(promise) {
 }
 
 const esc = H.esc;
+
+// -------------------------------------------------------------- row menu
+// Reusable "..." menu for list rows (Contatti, and any future list that
+// needs per-row actions beyond the primary click). `menuId` must be unique
+// within the page (e.g. "contatto-42"); `items` is [{action, id, label, danger}].
+function rowMenuHTML(menuId, items) {
+  const open = State.openRowMenu === menuId;
+  return `
+    <div class="row-menu">
+      <button class="row-menu-trigger" data-action="row-menu-toggle" data-menu-id="${menuId}" aria-label="Altre azioni">⋯</button>
+      ${open ? `
+        <div class="row-menu-dropdown">
+          ${items.map(it => `
+            <button class="row-menu-item ${it.danger ? 'row-menu-item-danger' : ''}" data-action="${it.action}" data-id="${it.id}">${esc(it.label)}</button>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
 
 // ---------------------------------------------------------- focus-preserving render
 function captureFocus() {
@@ -414,7 +435,9 @@ function contattiHTML(vm) {
             <div>
               ${r.hasNext ? `<div class="next-chip" style="background:${r.nextBg};color:${r.nextFg}"><div style="font-weight:600">${r.nextTipo} · ${r.nextQuando}</div><div style="opacity:.85">${esc(r.owner)}</div></div>` : `<span style="font-size:11px;color:var(--text-faint)">—</span>`}
             </div>
-            ${!selectMode ? `<div><button class="btn-ghost btn-sm" data-action="contatto-duplica" data-id="${r.id}" title="Duplica questo contatto">Duplica</button></div>` : '<div></div>'}
+            <div>${!selectMode ? rowMenuHTML('contatto-' + r.id, [
+              { action: 'contatto-duplica', id: r.id, label: 'Duplica' },
+            ]) : ''}</div>
           </div>`).join('')}
         ${vm.noRows ? `<div class="empty-state">Nessun contatto corrisponde ai filtri.</div>` : ''}
       </div>
