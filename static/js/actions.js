@@ -122,6 +122,17 @@ const clickActions = {
     }).catch((e) => alert('Errore durante l\'importazione: ' + e.message));
   },
 
+  'save-db-path': () => {
+    const path = (State.dbPathDraft !== null ? State.dbPathDraft : (Data.dbConfig || {}).path || '').trim();
+    if (!path) return;
+    Api.setDbPath(path).then((res) => {
+      Data.dbConfig = Object.assign({}, Data.dbConfig, { path: res.path });
+      setState({ dbPathDraft: null, dbPathMessage: { ok: true, text: 'Percorso salvato: verrà usato al prossimo avvio. Chiudi e riapri l\'applicazione.' } });
+    }).catch((e) => {
+      setState({ dbPathMessage: { ok: false, text: e.message } });
+    });
+  },
+
   'modal-tab': (t) => setState({ modalTab: t.dataset.tab }),
   'close-modal': () => setState({ modal: null, editId: null, form: {} }),
   'stop': () => {},
