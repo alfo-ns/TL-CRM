@@ -221,6 +221,23 @@ select { background: #fff; }
 .next-chip { font-size: 11px; padding: 4px 8px; border-radius: 7px; }
 .empty-state { padding: 40px; text-align: center; color: var(--text-faint); }
 
+/* ---------- row "..." menu (reusable for any list) ---------- */
+.row-menu { position: relative; display: inline-block; }
+.row-menu-trigger {
+  width: 28px; height: 28px; border: 1px solid transparent; background: transparent; border-radius: 7px;
+  color: var(--text-dimmer); font-size: 15px; line-height: 1; display: flex; align-items: center; justify-content: center;
+}
+.row-menu-trigger:hover { background: oklch(0.96 0.004 95); border-color: var(--border-strong); color: var(--text); }
+.row-menu-dropdown {
+  position: absolute; top: calc(100% + 4px); right: 0; z-index: 30; min-width: 160px;
+  background: #fff; border: 1px solid var(--border-strong); border-radius: 10px;
+  box-shadow: 0 8px 24px oklch(0.2 0.01 255 / 0.14); padding: 4px; display: flex; flex-direction: column; gap: 1px;
+}
+.row-menu-item { text-align: left; border: 0; background: transparent; padding: 8px 10px; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; }
+.row-menu-item:hover { background: oklch(0.96 0.004 95); }
+.row-menu-item-danger { color: var(--danger); }
+.row-menu-item-danger:hover { background: var(--danger-bg); }
+
 .groups { display: flex; flex-direction: column; gap: 8px; }
 .group { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
 .group-head { display: grid; grid-template-columns: 1.4fr 1fr 0.8fr 0.7fr 1fr 90px; gap: 12px; padding: 13px 18px; align-items: center; cursor: pointer; }
