@@ -60,6 +60,21 @@ function render() {
   document.getElementById('content').innerHTML = contentHTML(vm);
   document.getElementById('overlay-root').innerHTML = overlaysHTML(vm);
   restoreFocus(focusInfo);
+  applySplitWidth();
+}
+
+// The saved split-view width is applied imperatively (not baked into the
+// HTML string) so it only takes effect above the split-view breakpoint —
+// below it .drawer must stay full-width regardless of what's saved.
+function applySplitWidth() {
+  if (window.innerWidth <= 980) return;
+  const panel = document.getElementById('detail-panel');
+  if (!panel) return;
+  const saved = parseInt(localStorage.getItem('detailPanelWidth') || '', 10);
+  if (saved) {
+    panel.style.flex = '0 0 ' + saved + 'px';
+    panel.style.width = saved + 'px';
+  }
 }
 
 // ------------------------------------------------------------------- sidebar
@@ -141,10 +156,12 @@ function contentHTML(vm) {
   // current view inside .content; below the 980px breakpoint CSS turns
   // .detail-panel back into a fixed overlay with .scrim behind it, so the
   // same markup serves both layouts without re-rendering differently.
+  // The resizer handle only does anything above that breakpoint (see actions.js).
   return `
     <div class="content-split">
       <div class="content-main">${mainHTML}</div>
       <div class="scrim" data-action="close-detail"></div>
+      <div class="split-resizer" data-action="split-resize-start"></div>
       ${detailHTML(vm)}
     </div>
   `;
