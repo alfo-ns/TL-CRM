@@ -63,7 +63,7 @@ button { cursor: pointer; }
 .topbar .sub { font-size: 12px; color: var(--text-dimmer); margin-top: 3px; }
 .topbar .actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .content { flex: 1; overflow: auto; padding: 22px 26px 40px; }
-.view-wrap { max-width: 1500px; margin: 0 auto; }
+.view-wrap { max-width: 1800px; margin: 0 auto; }
 
 /* ---------- form controls ---------- */
 input[type=text], input[type=date], input[type=email], input[type=tel], select, textarea {
@@ -81,9 +81,12 @@ select { background: #fff; }
 
 /* ---------- cards / kpi ---------- */
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
-.grid-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(212px, 1fr)); gap: 14px; }
+.grid-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+.grid-kpi > .card { max-width: 280px; }
 .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 14px; align-items: stretch; }
+.grid-2 > .card { max-width: 720px; }
 .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; align-items: stretch; }
+.grid-3 > .card { max-width: 420px; }
 .kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: oklch(0.62 0.01 255); }
 .kpi-value { font-family: var(--mono); font-size: 30px; font-weight: 600; letter-spacing: -0.03em; margin-top: 8px; }
 .kpi-sub { font-size: 12px; color: var(--text-dimmer); margin-top: 4px; }
@@ -155,7 +158,7 @@ select { background: #fff; }
 .planner-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
 .planner-count { font-size: 12px; color: var(--text-dimmer); }
 .lanes { display: grid; grid-template-columns: repeat(auto-fit, minmax(238px, 1fr)); gap: 12px; align-items: start; }
-.lane { border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 9px; border: 1px solid var(--border-soft); }
+.lane { border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 9px; border: 1px solid var(--border-soft); max-width: 320px; }
 .lane-head { display: flex; align-items: center; gap: 8px; }
 .lane-label { font-weight: 600; font-size: 13px; }
 .lane-count { margin-left: auto; font-family: var(--mono); font-size: 11px; background: #fff; border: 1px solid var(--border); border-radius: 20px; padding: 1px 7px; }
@@ -211,7 +214,7 @@ select { background: #fff; }
 .bridge-intro { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
 .bridge-intro p { font-size: 13px; color: oklch(0.5 0.01 255); max-width: 620px; margin: 0; }
 .bridge-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 12px; align-items: start; }
-.bridge-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+.bridge-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; max-width: 460px; }
 .bridge-head { display: flex; align-items: flex-start; gap: 10px; }
 .bridge-name { font-weight: 600; letter-spacing: -0.01em; }
 .bridge-role { font-size: 12px; color: var(--text-dimmer); }
