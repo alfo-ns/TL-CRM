@@ -6,6 +6,7 @@ let State = {
   detailId: null, modal: null, modalTab: 'dettagli', editId: null, form: {},
   activityDraft: '', openGroups: {}, openDossier: null,
   opDraft: '', dossierDraft: {}, sidebarOpen: false,
+  importPreview: null, importFileName: '',
 };
 
 function setState(patch) {
@@ -479,8 +480,57 @@ function settingsHTML(vm) {
         </div>
         <div class="settings-desc text-wrap">In questo prototipo gli stadi sono fissi: "Prospect grezzo" raccoglie le aziende non ancora verificate, "Lead" solo quelle in target con referente identificato.</div>
       </div>
+      <div class="card">
+        <div class="card-title">Dati</div>
+        <div class="settings-desc">Esporta aziende, contatti e bridge contact in un unico file Excel, o reimportalo dopo averlo modificato. Righe con ID esistente aggiornano il record; righe senza ID (o con ID sconosciuto) creano un nuovo record. Nessun dato viene mai cancellato.</div>
+        <div class="data-io-row">
+          <a class="btn-ghost" href="/api/export/xlsx">Esporta in Excel</a>
+          <button class="btn-ghost" data-action="import-pick">Importa da Excel…</button>
+          <input type="file" id="import-file-input" accept=".xlsx" style="display:none" data-action-input="import-file">
+        </div>
+        ${importPreviewHTML(vm)}
+      </div>
     </div>
   `;
+}
+
+function importPreviewHTML(vm) {
+  const p = State.importPreview;
+  if (!p) return '';
+  if (p.error) {
+    return `<div class="import-preview import-preview-error">
+      <div class="import-preview-title">Impossibile leggere il file</div>
+      <div class="settings-desc">${esc(p.error)}</div>
+      <div class="modal-actions" style="margin-top:12px">
+        <button class="btn-ghost" data-action="import-cancel">Chiudi</button>
+      </div>
+    </div>`;
+  }
+  const rows = [
+    ['Aziende', p.aziende], ['Contatti', p.contatti], ['Bridge contact', p.bridge],
+  ];
+  return `<div class="import-preview">
+    <div class="import-preview-title">Anteprima importazione — ${State.importFileName ? esc(State.importFileName) : ''}</div>
+    <div class="import-preview-rows">
+      ${rows.map(([label, r]) => `
+        <div class="import-preview-row">
+          <span>${label}</span>
+          <span class="mono">${r.nuove} nuove · ${r.aggiornate} aggiornate</span>
+        </div>`).join('')}
+    </div>
+    ${p.errori.length ? `
+      <div class="import-preview-errors">
+        <div class="settings-desc" style="color:var(--danger)">${p.errori.length} righe con problemi (non verranno importate):</div>
+        <ul>
+          ${p.errori.slice(0, 20).map(e => `<li>${esc(e.sheet)} · riga ${e.row}: ${esc(e.message)}</li>`).join('')}
+        </ul>
+        ${p.errori.length > 20 ? `<div class="settings-desc">+ altre ${p.errori.length - 20} righe con problemi.</div>` : ''}
+      </div>` : ''}
+    <div class="modal-actions" style="margin-top:12px">
+      <button class="btn-ghost" data-action="import-cancel">Annulla</button>
+      <button class="btn" data-action="import-confirm">Conferma importazione</button>
+    </div>
+  </div>`;
 }
 
 // ------------------------------------------------------------------ overlays

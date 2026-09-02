@@ -16,6 +16,10 @@ function num(v) { const n = parseInt(String(v).replace(/\D/g, ''), 10); return i
 // pointer-based drag state for the kanban board (mouse, touch and pen)
 const dragCtx = { card: null, ghost: null, overCol: null, pointerId: null, started: false, suppressClick: false };
 
+// holds the File object picked for import — not put in State, which is
+// re-rendered to HTML and has no business holding binary blobs
+let importFile = null;
+
 // -------------------------------------------------------------- click actions
 const clickActions = {
   'nav': (t) => setState({ view: t.dataset.view, sidebarOpen: false }),
@@ -101,6 +105,23 @@ const clickActions = {
     });
   },
 
+  'import-pick': () => document.getElementById('import-file-input').click(),
+  'import-cancel': () => { importFile = null; setState({ importPreview: null, importFileName: '' }); },
+  'import-confirm': () => {
+    if (!importFile) return;
+    Api.importApply(importFile).then((fresh) => {
+      importFile = null;
+      Data = fresh;
+      const s = fresh.importSummary;
+      setState({ importPreview: null, importFileName: '' });
+      alert('Importazione completata: ' +
+        s.aziende.nuove + ' aziende nuove / ' + s.aziende.aggiornate + ' aggiornate, ' +
+        s.contatti.nuove + ' contatti nuovi / ' + s.contatti.aggiornate + ' aggiornati, ' +
+        s.bridge.nuove + ' bridge nuovi / ' + s.bridge.aggiornate + ' aggiornati.' +
+        (s.errori.length ? '\n' + s.errori.length + ' righe scartate per errori.' : ''));
+    }).catch((e) => alert('Errore durante l\'importazione: ' + e.message));
+  },
+
   'modal-tab': (t) => setState({ modalTab: t.dataset.tab }),
   'close-modal': () => setState({ modal: null, editId: null, form: {} }),
   'stop': () => {},
@@ -184,6 +205,19 @@ function wireEvents() {
 
   app.addEventListener('change', (e) => {
     const t = e.target;
+    if (t.dataset.actionInput === 'import-file') {
+      const file = t.files && t.files[0];
+      t.value = '';
+      if (!file) return;
+      importFile = file;
+      setState({ importFileName: file.name, importPreview: null });
+      Api.importPreview(file).then((summary) => {
+        setState({ importPreview: summary });
+      }).catch((e) => {
+        setState({ importPreview: { error: e.message } });
+      });
+      return;
+    }
     if (t.dataset.action && changeActions[t.dataset.action]) {
       changeActions[t.dataset.action](t);
       return;

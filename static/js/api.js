@@ -39,5 +39,17 @@ const Api = (() => {
     createOperator: (nome) => req('POST', '/api/operators', { nome }),
     renameOperator: (id, nome) => req('PUT', '/api/operators/' + id, { nome }),
     deleteOperator: (id) => req('DELETE', '/api/operators/' + id),
+
+    importPreview: (file) => reqFile('/api/import/xlsx/preview', file),
+    importApply: (file) => reqFile('/api/import/xlsx/apply', file),
   };
+
+  async function reqFile(url, file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch(url, { method: 'POST', body: fd });
+    const j = await res.json().catch(() => null);
+    if (!res.ok) throw new Error((j && j.error) || ('HTTP ' + res.status));
+    return j;
+  }
 })();

@@ -1,10 +1,12 @@
+import io
 import threading
 import webbrowser
 from datetime import date
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_file, send_from_directory
 
 import db
+import xlsx_io
 from config import load_config
 from constants import ACTION_LABEL, STAGE_INDEX, STAGE_LABEL, STAGE_ORDER, STAGES, ACTION_TYPES
 
@@ -600,6 +602,59 @@ def delete_operator(operator_id):
 
     db.run_write(op)
     return jsonify(full_bootstrap())
+
+
+# --------------------------------------------------------------- export/import
+
+@app.get("/api/export/xlsx")
+def export_xlsx():
+    conn = db.get_db()
+    wb = xlsx_io.build_workbook(conn)
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    filename = "vendite-crm-export-%s.xlsx" % today_iso()
+    return send_file(
+        buf, as_attachment=True, download_name=filename,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+@app.post("/api/import/xlsx/preview")
+def import_xlsx_preview():
+    file = request.files.get("file")
+    if not file:
+        return jsonify({"error": "nessun file ricevuto"}), 400
+    conn = db.get_db()
+    try:
+        plan = xlsx_io.parse_workbook(file.stream, conn)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception:
+        return jsonify({"error": "file non leggibile: verifica che sia un .xlsx esportato da questa app"}), 400
+    return jsonify(plan.summary())
+
+
+@app.post("/api/import/xlsx/apply")
+def import_xlsx_apply():
+    file = request.files.get("file")
+    if not file:
+        return jsonify({"error": "nessun file ricevuto"}), 400
+    conn = db.get_db()
+    try:
+        plan = xlsx_io.parse_workbook(file.stream, conn)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+    except Exception:
+        return jsonify({"error": "file non leggibile: verifica che sia un .xlsx esportato da questa app"}), 400
+
+    def op(conn):
+        xlsx_io.apply_import(conn, plan, today_iso(), today_it())
+
+    db.run_write(op)
+    payload = full_bootstrap()
+    payload["importSummary"] = plan.summary()
+    return jsonify(payload)
 
 
 # ------------------------------------------------------------------------ boot
