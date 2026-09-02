@@ -121,18 +121,33 @@ function topbarHTML(vm) {
 function contentHTML(vm) {
   // Pipeline uses the full width (more kanban columns fit on wide screens);
   // every other view is capped and centered so text/cards stay readable on ultra-wide monitors.
-  if (State.view === 'pipeline') return pipelineHTML(vm);
-  const inner = (() => {
-    switch (State.view) {
-      case 'dashboard': return dashboardHTML(vm);
-      case 'planner': return plannerHTML(vm);
-      case 'contatti': return contattiHTML(vm);
-      case 'bridge': return bridgeHTML(vm);
-      case 'impostazioni': return settingsHTML(vm);
-      default: return '';
-    }
+  const mainHTML = State.view === 'pipeline' ? pipelineHTML(vm) : (() => {
+    const inner = (() => {
+      switch (State.view) {
+        case 'dashboard': return dashboardHTML(vm);
+        case 'planner': return plannerHTML(vm);
+        case 'contatti': return contattiHTML(vm);
+        case 'bridge': return bridgeHTML(vm);
+        case 'impostazioni': return settingsHTML(vm);
+        default: return '';
+      }
+    })();
+    return `<div class="view-wrap">${inner}</div>`;
   })();
-  return `<div class="view-wrap">${inner}</div>`;
+
+  if (!vm.hasDetail) return mainHTML;
+
+  // Detail split view: on desktop the detail panel sits alongside the
+  // current view inside .content; below the 980px breakpoint CSS turns
+  // .detail-panel back into a fixed overlay with .scrim behind it, so the
+  // same markup serves both layouts without re-rendering differently.
+  return `
+    <div class="content-split">
+      <div class="content-main">${mainHTML}</div>
+      <div class="scrim" data-action="close-detail"></div>
+      ${detailHTML(vm)}
+    </div>
+  `;
 }
 
 function dashboardHTML(vm) {
@@ -574,15 +589,14 @@ function importPreviewHTML(vm) {
 
 // ------------------------------------------------------------------ overlays
 function overlaysHTML(vm) {
-  return detailHTML(vm) + modalHTML(vm);
+  return modalHTML(vm);
 }
 
 function detailHTML(vm) {
   if (!vm.hasDetail) return '';
   const d = vm.detail;
   return `
-    <div class="scrim" data-action="close-detail"></div>
-    <aside class="drawer">
+    <aside class="drawer" id="detail-panel">
       <div class="drawer-head">
         <div class="drawer-title-row">
           <div style="min-width:0">
