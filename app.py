@@ -5,12 +5,12 @@ from datetime import date
 
 from flask import Flask, jsonify, request, send_file, send_from_directory
 
+import config
 import db
 import xlsx_io
-from config import load_config
 from constants import ACTION_LABEL, STAGE_INDEX, STAGE_LABEL, STAGE_ORDER, STAGES, ACTION_TYPES
 
-CONFIG = load_config()
+CONFIG = config.load_config()
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 db.init_app(app)
@@ -163,6 +163,7 @@ def full_bootstrap():
         "contacts": contacts,
         "bridges": bridges,
         "stageAvgDays": compute_stage_avg_days(conn, today),
+        "dbConfig": {"path": CONFIG["db_path"], "source": config.db_path_source()},
     }
 
 
@@ -602,6 +603,25 @@ def delete_operator(operator_id):
 
     db.run_write(op)
     return jsonify(full_bootstrap())
+
+
+# ------------------------------------------------------------------------ config
+
+@app.post("/api/config/db-path")
+def set_db_path():
+    body = request.get_json(force=True) or {}
+    new_path = (body.get("path") or "").strip()
+    if not new_path:
+        return jsonify({"error": "percorso mancante"}), 400
+    if config.db_path_source() in ("env", "dotenv"):
+        return jsonify({
+            "error": "Il percorso è impostato da una variabile d'ambiente o da un file .env, "
+                     "che hanno priorità su questa impostazione. Rimuovi CRM_DB_PATH da lì per "
+                     "poterlo cambiare da qui."
+        }), 409
+
+    config.set_db_path(new_path)
+    return jsonify({"path": new_path, "requiresRestart": True})
 
 
 # --------------------------------------------------------------- export/import

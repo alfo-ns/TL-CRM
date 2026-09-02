@@ -7,6 +7,7 @@ let State = {
   activityDraft: '', openGroups: {}, openDossier: null,
   opDraft: '', dossierDraft: {}, sidebarOpen: false,
   importPreview: null, importFileName: '',
+  dbPathDraft: null, dbPathMessage: null,
 };
 
 function setState(patch) {
@@ -490,6 +491,31 @@ function settingsHTML(vm) {
         </div>
         ${importPreviewHTML(vm)}
       </div>
+      ${dbPathHTML(vm)}
+    </div>
+  `;
+}
+
+function dbPathHTML(vm) {
+  const cfg = Data.dbConfig || { path: '', source: 'default' };
+  const locked = cfg.source === 'env' || cfg.source === 'dotenv';
+  const draft = State.dbPathDraft !== null ? State.dbPathDraft : cfg.path;
+  return `
+    <div class="card">
+      <div class="card-title">Percorso database</div>
+      <div class="settings-desc">Dove viene salvato il file dei dati (crm.db) — puoi puntarlo a una cartella di rete condivisa così più postazioni vedono gli stessi dati. Il cambiamento richiede di chiudere e riavviare l'applicazione: non ha effetto sulla sessione in corso.</div>
+      ${locked ? `
+        <div class="settings-desc" style="color:var(--danger);margin-top:10px">
+          Il percorso è impostato da una variabile d'ambiente o da un file .env, che hanno priorità su questa impostazione. Rimuovi CRM_DB_PATH da lì per poterlo cambiare da qui.
+        </div>
+        <input type="text" value="${esc(cfg.path)}" disabled style="width:100%;margin-top:10px;color:var(--text-faint)">
+      ` : `
+        <input type="text" placeholder="es. Z:\\CRM\\crm.db" value="${esc(draft)}" data-focus-id="db-path" data-bind="dbPathDraft" style="width:100%;margin-top:10px" class="mono">
+        <div class="modal-actions" style="justify-content:flex-start;margin-top:10px">
+          <button class="btn-ghost" data-action="save-db-path">Salva percorso</button>
+        </div>
+        ${State.dbPathMessage ? `<div class="settings-desc" style="margin-top:8px;color:${State.dbPathMessage.ok ? 'var(--accent-fg)' : 'var(--danger)'}">${esc(State.dbPathMessage.text)}</div>` : ''}
+      `}
     </div>
   `;
 }

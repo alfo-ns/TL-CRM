@@ -42,6 +42,8 @@ const Api = (() => {
 
     importPreview: (file) => reqFile('/api/import/xlsx/preview', file),
     importApply: (file) => reqFile('/api/import/xlsx/apply', file),
+
+    setDbPath: (path) => req('POST', '/api/config/db-path', { path }),
   };
 
   async function reqFile(url, file) {

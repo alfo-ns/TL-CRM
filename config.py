@@ -40,9 +40,39 @@ def _load_config_json(path):
         return {}
 
 
+CONFIG_JSON_PATH = os.path.join(APP_DIR, "config.json")
+ENV_FILE_PATH = os.path.join(APP_DIR, ".env")
+
+
+def db_path_source():
+    """Which layer is currently deciding db_path, for the settings UI: a
+    value coming from an env var or .env can't be overridden by writing
+    config.json, so the UI needs to say so instead of silently no-op'ing."""
+    if os.environ.get("CRM_DB_PATH"):
+        return "env"
+    env_file = _load_env_file(ENV_FILE_PATH)
+    if env_file.get("CRM_DB_PATH"):
+        return "dotenv"
+    config_json = _load_config_json(CONFIG_JSON_PATH)
+    if config_json.get("db_path"):
+        return "config"
+    return "default"
+
+
+def set_db_path(new_path):
+    """Persist db_path into config.json, preserving any other keys already
+    there. Does not affect env vars/.env, which still take precedence on
+    next launch if set — callers should check db_path_source() first."""
+    config_json = _load_config_json(CONFIG_JSON_PATH)
+    config_json["db_path"] = new_path
+    with open(CONFIG_JSON_PATH, "w", encoding="utf-8") as f:
+        json.dump(config_json, f, indent=2, ensure_ascii=False)
+        f.write("\n")
+
+
 def load_config():
-    env_file = _load_env_file(os.path.join(APP_DIR, ".env"))
-    config_json = _load_config_json(os.path.join(APP_DIR, "config.json"))
+    env_file = _load_env_file(ENV_FILE_PATH)
+    config_json = _load_config_json(CONFIG_JSON_PATH)
 
     db_path = (
         os.environ.get("CRM_DB_PATH")
