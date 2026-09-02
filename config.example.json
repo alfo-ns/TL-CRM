@@ -1,0 +1,6 @@
+{
+  "db_path": "Z:\\CRM\\crm.db",
+  "host": "127.0.0.1",
+  "port": 5000,
+  "open_browser": true
+}
