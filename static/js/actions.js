@@ -77,6 +77,10 @@ const clickActions = {
 
   'planner-mode': (t) => setState({ plannerMode: t.dataset.mode }),
   'contatti-mode': (t) => setState({ contattiMode: t.dataset.mode }),
+  'row-menu-toggle': (t) => {
+    const id = t.dataset.menuId;
+    setState(s => ({ openRowMenu: s.openRowMenu === id ? null : id }));
+  },
   'contatti-toggle-select': () => setState(s => ({ contattiSelectMode: !s.contattiSelectMode, contattiSelected: {} })),
   'contatti-toggle-row': (t) => {
     const id = parseInt(t.dataset.id, 10);
@@ -109,7 +113,7 @@ const clickActions = {
     mutate(Api.createContact(payload)).then((fresh) => {
       if (!fresh) return;
       const created = fresh.contacts.filter(c => c.companyId === p.companyId).sort((a, b) => b.id - a.id)[0];
-      setState({ detailId: p.companyId, openDossier: null, modal: 'contact', modalTab: 'dettagli', editId: created.id, form: Object.assign({}, created, created.next || {}, { nextTipo: created.next ? created.next.tipo : 'followup', nextData: created.next ? created.next.data : '', nextStadio: created.next ? created.next.stadio : created.stage }, created.dossier || {}) });
+      setState({ detailId: p.companyId, openDossier: null, openRowMenu: null, modal: 'contact', modalTab: 'dettagli', editId: created.id, form: Object.assign({}, created, created.next || {}, { nextTipo: created.next ? created.next.tipo : 'followup', nextData: created.next ? created.next.data : '', nextStadio: created.next ? created.next.stadio : created.stage }, created.dossier || {}) });
     });
   },
   'toggle-group': (t) => {
@@ -247,6 +251,7 @@ function wireEvents() {
 
   app.addEventListener('click', (e) => {
     if (dragCtx.suppressClick) { dragCtx.suppressClick = false; return; }
+    if (State.openRowMenu && !e.target.closest('.row-menu')) setState({ openRowMenu: null });
     const t = e.target.closest('[data-action]');
     if (!t) return;
     const action = t.dataset.action;
