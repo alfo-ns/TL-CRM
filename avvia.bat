@@ -1,13 +1,13 @@
 @echo off
-setlocal
+setlocal EnableDelayedExpansion
 cd /d "%~dp0"
 
 where py >nul 2>nul
-if %ERRORLEVEL%==0 (
+if !ERRORLEVEL!==0 (
     set PYLAUNCHER=py
 ) else (
     where python >nul 2>nul
-    if %ERRORLEVEL%==0 (
+    if !ERRORLEVEL!==0 (
         set PYLAUNCHER=python
     ) else (
         echo Python non trovato. Installa Python 3.10 o superiore da https://www.python.org/downloads/
