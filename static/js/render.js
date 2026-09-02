@@ -8,6 +8,7 @@ let State = {
   opDraft: '', dossierDraft: {}, sidebarOpen: false,
   importPreview: null, importFileName: '',
   dbPathDraft: null, dbPathMessage: null,
+  contattiSelectMode: false, contattiSelected: {},
 };
 
 function setState(patch) {
@@ -341,18 +342,29 @@ function plannerHTML(vm) {
 
 function contattiHTML(vm) {
   const personeTab = State.contattiMode === 'persone';
+  const selectMode = State.contattiSelectMode;
+  const selectedIds = Object.keys(State.contattiSelected).filter(id => State.contattiSelected[id]).map(Number);
+  const selectedCount = selectedIds.length;
   return `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <div class="tabs">
         <button class="tab-btn ${personeTab ? 'active' : ''}" data-action="contatti-mode" data-mode="persone">Persone</button>
         <button class="tab-btn ${!personeTab ? 'active' : ''}" data-action="contatti-mode" data-mode="aziende">Aziende</button>
       </div>
+      ${personeTab ? `
+        <button class="btn-ghost btn-sm" data-action="contatti-toggle-select">${selectMode ? 'Annulla selezione' : 'Seleziona'}</button>
+        ${selectMode && selectedCount ? `
+          <span style="font-size:12px;color:var(--text-dimmer)">${selectedCount} selezionati</span>
+          <button class="btn-danger btn-sm" data-action="contatti-delete-selected">Elimina selezionati</button>
+        ` : ''}
+      ` : ''}
     </div>
     ${personeTab ? `
       <div class="table">
-        <div class="table-head"><div>Persona</div><div>Azienda</div><div>Ruolo</div><div>Contatti</div><div>Stadio</div><div>Prossima mossa</div></div>
+        <div class="table-head"><div></div><div>Persona</div><div>Azienda</div><div>Ruolo</div><div>Contatti</div><div>Stadio</div><div>Prossima mossa</div><div></div></div>
         ${vm.rows.map(r => `
-          <div class="table-row" data-action="open-detail" data-id="${r.companyId}">
+          <div class="table-row ${selectMode ? 'table-row-selectable' : ''}" data-action="${selectMode ? 'contatti-toggle-row' : 'open-detail'}" data-id="${selectMode ? r.id : r.companyId}">
+            <div>${selectMode ? `<input type="checkbox" data-action="contatti-toggle-row" data-id="${r.id}" ${State.contattiSelected[r.id] ? 'checked' : ''}>` : ''}</div>
             <div class="person-cell">
               <span class="avatar avatar-md">${r.initials}</span>
               <div style="min-width:0">
@@ -370,6 +382,7 @@ function contattiHTML(vm) {
             <div>
               ${r.hasNext ? `<div class="next-chip" style="background:${r.nextBg};color:${r.nextFg}"><div style="font-weight:600">${r.nextTipo} · ${r.nextQuando}</div><div style="opacity:.85">${esc(r.owner)}</div></div>` : `<span style="font-size:11px;color:var(--text-faint)">—</span>`}
             </div>
+            ${!selectMode ? `<div><button class="btn-ghost btn-sm" data-action="contatto-duplica" data-id="${r.id}" title="Duplica questo contatto">Duplica</button></div>` : '<div></div>'}
           </div>`).join('')}
         ${vm.noRows ? `<div class="empty-state">Nessun contatto corrisponde ai filtri.</div>` : ''}
       </div>

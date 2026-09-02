@@ -193,8 +193,10 @@ select { background: #fff; }
 
 /* ---------- contatti ---------- */
 .table { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-.table-head { display: grid; grid-template-columns: 1.15fr 1fr 0.95fr 1.15fr 0.85fr 0.95fr; gap: 12px; padding: 11px 18px; background: oklch(0.975 0.003 95); border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: oklch(0.55 0.01 255); }
-.table-row { display: grid; grid-template-columns: 1.15fr 1fr 0.95fr 1.15fr 0.85fr 0.95fr; gap: 12px; padding: 13px 18px; border-bottom: 1px solid oklch(0.96 0.004 95); cursor: pointer; align-items: center; }
+.table-head { display: grid; grid-template-columns: 28px 1.15fr 1fr 0.95fr 1.15fr 0.85fr 0.95fr 70px; gap: 12px; padding: 11px 18px; background: oklch(0.975 0.003 95); border-bottom: 1px solid var(--border); font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; color: oklch(0.55 0.01 255); }
+.table-row { display: grid; grid-template-columns: 28px 1.15fr 1fr 0.95fr 1.15fr 0.85fr 0.95fr 70px; gap: 12px; padding: 13px 18px; border-bottom: 1px solid oklch(0.96 0.004 95); cursor: pointer; align-items: center; }
+.table-row-selectable { cursor: default; }
+.table-row input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; }
 .table-row:hover { background: oklch(0.982 0.003 95); }
 .person-cell { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .person-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
