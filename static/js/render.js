@@ -184,15 +184,15 @@ function dashboardHTML(vm) {
       </div>
       <div class="card">
         <div class="kpi-label">Prospect → Vinto</div>
-        <div class="kpi-value" style="color:oklch(0.5 0.11 155)">${k.convTotale}</div>
+        <div class="kpi-value" style="color:var(--success)">${k.convTotale}</div>
         <div class="kpi-sub">${k.vinti} vinti su ${k.aziende}</div>
       </div>
       <div class="card">
         <div class="kpi-label">Azioni da fare</div>
         <div class="kpi-split">
-          <div><div class="n" style="color:oklch(0.55 0.15 25)">${k.inRitardo}</div><div class="l">in ritardo</div></div>
+          <div><div class="n" style="color:var(--danger)">${k.inRitardo}</div><div class="l">in ritardo</div></div>
           <div class="kpi-divider"></div>
-          <div><div class="n">${k.oggi}</div><div class="l">oggi</div></div>
+          <div><div class="n" style="color:var(--warning)">${k.oggi}</div><div class="l">oggi</div></div>
         </div>
       </div>
       <div class="card">
@@ -236,12 +236,12 @@ function dashboardHTML(vm) {
       <div class="card">
         <div class="card-title">Vinti vs persi</div>
         <div style="display:flex;align-items:baseline;gap:24px;margin-top:16px">
-          <div><div class="mono" style="font-size:26px;font-weight:600;color:oklch(0.5 0.11 155)">${k.pctVinti}</div><div class="kpi-sub">${k.vinti} vinti</div></div>
-          <div><div class="mono" style="font-size:26px;font-weight:600;color:oklch(0.57 0.15 25)">${k.pctPersi}</div><div class="kpi-sub">${k.persi} persi</div></div>
+          <div><div class="mono" style="font-size:26px;font-weight:600;color:var(--success)">${k.pctVinti}</div><div class="kpi-sub">${k.vinti} vinti</div></div>
+          <div><div class="mono" style="font-size:26px;font-weight:600;color:var(--danger)">${k.pctPersi}</div><div class="kpi-sub">${k.persi} persi</div></div>
         </div>
         <div style="display:flex;height:10px;border-radius:5px;overflow:hidden;margin-top:16px;background:oklch(0.96 0.004 95)">
-          <div style="background:oklch(0.55 0.11 155);width:${k.barVinti}"></div>
-          <div style="background:oklch(0.6 0.15 25);width:${k.barPersi}"></div>
+          <div style="background:var(--success);width:${k.barVinti}"></div>
+          <div style="background:var(--danger);width:${k.barPersi}"></div>
         </div>
         <div class="kpi-sub" style="margin-top:10px">${k.chiuse} trattative chiuse · valore vinto ${k.valoreVinto}</div>
       </div>
@@ -288,7 +288,7 @@ function pipelineHTML(vm) {
         </div>
         <div class="kanban-col-total mono">${col.total}</div>
         ${col.deals.map(d => `
-          <div class="deal-card" data-drag-id="${d.id}" data-action="open-detail" data-id="${d.id}">
+          <div class="deal-card ${d.overdue ? 'deal-card-overdue' : ''}" data-drag-id="${d.id}" data-action="open-detail" data-id="${d.id}">
             <div class="deal-name">${esc(d.nome)}</div>
             <div class="deal-sub">${esc(d.settore)} · ${d.dip} dip.</div>
             <div class="deal-row">
@@ -573,7 +573,7 @@ function importPreviewHTML(vm) {
       <div class="import-preview-title">Impossibile leggere il file</div>
       <div class="settings-desc">${esc(p.error)}</div>
       <div class="modal-actions" style="margin-top:12px">
-        <button class="btn-ghost" data-action="import-cancel">Chiudi</button>
+        <button class="btn-text" data-action="import-cancel">Chiudi</button>
       </div>
     </div>`;
   }
@@ -598,7 +598,7 @@ function importPreviewHTML(vm) {
         ${p.errori.length > 20 ? `<div class="settings-desc">+ altre ${p.errori.length - 20} righe con problemi.</div>` : ''}
       </div>` : ''}
     <div class="modal-actions" style="margin-top:12px">
-      <button class="btn-ghost" data-action="import-cancel">Annulla</button>
+      <button class="btn-text" data-action="import-cancel">Annulla</button>
       <button class="btn" data-action="import-confirm">Conferma importazione</button>
     </div>
   </div>`;
@@ -816,7 +816,7 @@ function modalHTML(vm) {
         <div class="modal-title">${title}</div>
         ${body}
         <div class="modal-actions">
-          <button class="btn-ghost" data-action="close-modal">Annulla</button>
+          <button class="btn-text" data-action="close-modal">Annulla</button>
           <button class="btn" data-action="save-modal">Salva</button>
         </div>
       </div>

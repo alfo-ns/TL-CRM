@@ -96,6 +96,7 @@ function computeViewModel() {
           referente: p ? p.nome + ' ' + p.cognome + (people.length > 1 ? ' +' + (people.length - 1) : '') : 'Referente da trovare',
           gestitoDa: c.gestitoDa,
           hasNext: !!(c.next && c.next.data), nextBg: u.bg, nextFg: u.fg,
+          overdue: !!(c.next && c.next.data && H.dayDiff(c.next.data) < 0),
           nextTipo: c.next ? H.actionById(c.next.tipo).label : '', nextQuando: c.next ? H.quando(c.next.data) : '',
           nextStadio: c.next ? H.stageLabelShort(c.next.stadio) : '',
           hasBridge: !!br, bridge: br ? br.nome : '',
