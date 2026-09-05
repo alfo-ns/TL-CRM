@@ -89,27 +89,38 @@ def _table_columns(conn, table):
 
 def _migrate(conn):
     """Adds columns introduced after the initial schema to pre-existing
-    databases, since CREATE TABLE IF NOT EXISTS leaves old tables untouched."""
-    company_cols = _table_columns(conn, "companies")
-    for col, ddl in (
-        ("email", "TEXT NOT NULL DEFAULT ''"),
-        ("sito_web", "TEXT NOT NULL DEFAULT ''"),
-        ("note", "TEXT NOT NULL DEFAULT ''"),
-        ("deleted_at", "TEXT"),
-    ):
-        if col not in company_cols:
-            conn.execute("ALTER TABLE companies ADD COLUMN %s %s" % (col, ddl))
-    contact_cols = _table_columns(conn, "contacts")
-    if "deleted_at" not in contact_cols:
-        conn.execute("ALTER TABLE contacts ADD COLUMN deleted_at TEXT")
+    databases, since CREATE TABLE IF NOT EXISTS leaves old tables untouched.
+    Must run before schema.sql's CREATE INDEX statements, since those
+    reference these columns and would fail on a pre-existing table that
+    doesn't have them yet."""
+    if "companies" in _existing_tables(conn):
+        company_cols = _table_columns(conn, "companies")
+        for col, ddl in (
+            ("email", "TEXT NOT NULL DEFAULT ''"),
+            ("sito_web", "TEXT NOT NULL DEFAULT ''"),
+            ("note", "TEXT NOT NULL DEFAULT ''"),
+            ("deleted_at", "TEXT"),
+        ):
+            if col not in company_cols:
+                conn.execute("ALTER TABLE companies ADD COLUMN %s %s" % (col, ddl))
+    if "contacts" in _existing_tables(conn):
+        contact_cols = _table_columns(conn, "contacts")
+        if "deleted_at" not in contact_cols:
+            conn.execute("ALTER TABLE contacts ADD COLUMN deleted_at TEXT")
+
+
+def _existing_tables(conn):
+    return {row["name"] for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
 
 
 def init_db(seed_if_empty=True):
     conn = _connect()
     try:
+        _migrate(conn)
         with open(_SCHEMA_PATH, "r", encoding="utf-8") as f:
             conn.executescript(f.read())
-        _migrate(conn)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_companies_deleted ON companies(deleted_at)")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_contacts_deleted ON contacts(deleted_at)")
         if seed_if_empty:
             row = conn.execute("SELECT COUNT(*) AS n FROM companies").fetchone()
             if row["n"] == 0:
