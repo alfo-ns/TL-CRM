@@ -40,7 +40,6 @@ CREATE TABLE IF NOT EXISTS companies (
 );
 CREATE INDEX IF NOT EXISTS idx_companies_bridge ON companies(bridge_id);
 CREATE INDEX IF NOT EXISTS idx_companies_stage ON companies(stage);
-CREATE INDEX IF NOT EXISTS idx_companies_deleted ON companies(deleted_at);
 
 CREATE TABLE IF NOT EXISTS contacts (
   id                        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -73,7 +72,6 @@ CREATE TABLE IF NOT EXISTS contacts (
   deleted_at                TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_contacts_company ON contacts(company_id);
-CREATE INDEX IF NOT EXISTS idx_contacts_deleted ON contacts(deleted_at);
 
 CREATE TABLE IF NOT EXISTS stage_history (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
