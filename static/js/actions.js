@@ -81,6 +81,17 @@ const clickActions = {
     const id = t.dataset.menuId;
     setState(s => ({ openRowMenu: s.openRowMenu === id ? null : id }));
   },
+  'sort-list': (t) => {
+    const list = t.dataset.list, field = t.dataset.field;
+    setState(s => {
+      const cur = s.sort[list];
+      let next;
+      if (!cur || cur.field !== field) next = { field, dir: 'asc' };
+      else if (cur.dir === 'asc') next = { field, dir: 'desc' };
+      else next = null;
+      return { sort: Object.assign({}, s.sort, { [list]: next }) };
+    });
+  },
   'contatti-toggle-select': () => setState(s => ({ contattiSelectMode: !s.contattiSelectMode, contattiSelected: {} })),
   'contatti-toggle-row': (t) => {
     const id = parseInt(t.dataset.id, 10);

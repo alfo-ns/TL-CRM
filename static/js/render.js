@@ -10,6 +10,7 @@ let State = {
   dbPathDraft: null, dbPathMessage: null,
   contattiSelectMode: false, contattiSelected: {},
   openRowMenu: null,
+  sort: { persone: null, aziende: null },
 };
 
 function setState(patch) {
@@ -48,6 +49,30 @@ function rowMenuHTML(menuId, items) {
       ` : ''}
     </div>
   `;
+}
+
+// -------------------------------------------------------------- sortable table header
+// Reusable click-to-sort column header. `listKey` identifies the list in
+// State.sort (e.g. "persone", "aziende"); `field` is the key sortRows will
+// read off each row. Clicking toggles asc -> desc -> unsorted.
+function sortHeaderHTML(listKey, field, label) {
+  const cur = State.sort[listKey];
+  const active = cur && cur.field === field;
+  const arrow = active ? (cur.dir === 'asc' ? ' ▲' : ' ▼') : '';
+  return `<div class="table-sort-head" data-action="sort-list" data-list="${listKey}" data-field="${field}">${esc(label)}${arrow}</div>`;
+}
+function sortRows(listKey, rows, accessors) {
+  const s = State.sort[listKey];
+  if (!s) return rows;
+  const get = accessors[s.field];
+  if (!get) return rows;
+  const sorted = rows.slice().sort((a, b) => {
+    const va = get(a), vb = get(b);
+    if (typeof va === 'number' && typeof vb === 'number') return va - vb;
+    return String(va).localeCompare(String(vb), 'it', { sensitivity: 'base' });
+  });
+  if (s.dir === 'desc') sorted.reverse();
+  return sorted;
 }
 
 // ---------------------------------------------------------- focus-preserving render
@@ -414,8 +439,19 @@ function contattiHTML(vm) {
     </div>
     ${personeTab ? `
       <div class="table">
-        <div class="table-head"><div></div><div>Persona</div><div>Azienda</div><div>Ruolo</div><div>Contatti</div><div>Stadio</div><div>Prossima mossa</div><div></div></div>
-        ${vm.rows.map(r => `
+        <div class="table-head">
+          <div></div>
+          ${sortHeaderHTML('persone', 'persona', 'Persona')}
+          ${sortHeaderHTML('persone', 'azienda', 'Azienda')}
+          ${sortHeaderHTML('persone', 'ruolo', 'Ruolo')}
+          <div>Contatti</div>
+          ${sortHeaderHTML('persone', 'stage', 'Stadio')}
+          <div>Prossima mossa</div>
+          <div></div>
+        </div>
+        ${sortRows('persone', vm.rows, {
+          persona: r => r.persona, azienda: r => r.azienda, ruolo: r => r.ruolo, stage: r => r.stage,
+        }).map(r => `
           <div class="table-row ${selectMode ? 'table-row-selectable' : ''}" data-action="${selectMode ? 'contatti-toggle-row' : 'open-detail'}" data-id="${selectMode ? r.id : r.companyId}">
             <div>${selectMode ? `<input type="checkbox" data-action="contatti-toggle-row" data-id="${r.id}" ${State.contattiSelected[r.id] ? 'checked' : ''}>` : ''}</div>
             <div class="person-cell">
@@ -446,7 +482,17 @@ function contattiHTML(vm) {
       </div>
     ` : `
       <div class="groups">
-        ${vm.groups.map(g => `
+        <div class="group-head group-head-labels">
+          ${sortHeaderHTML('aziende', 'nome', 'Azienda')}
+          ${sortHeaderHTML('aziende', 'stage', 'Stadio')}
+          ${sortHeaderHTML('aziende', 'valore', 'Valore')}
+          <div>Persone</div>
+          <div>Prossima mossa</div>
+          <div></div>
+        </div>
+        ${sortRows('aziende', vm.groups, {
+          nome: g => g.nome, stage: g => g.stage, valore: g => g.valoreNum,
+        }).map(g => `
           <div class="group">
             <div class="group-head" data-action="toggle-group" data-id="${g.id}">
               <div style="min-width:0">
