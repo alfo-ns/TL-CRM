@@ -175,7 +175,7 @@ function computeViewModel() {
       : null;
     return {
       id: co.id, nome: co.nome, settore: co.settore, dip: co.dip, stage: s.label.replace(' (Cliente)', ''), stageColor: s.color,
-      valore: H.eur(co.valore), nPersone: people.length, noPersone: people.length === 0,
+      valore: H.eur(co.valore), valoreNum: co.valore, nPersone: people.length, noPersone: people.length === 0,
       nextLabel: nexts.length ? (H.actionById(firstNextTipo).label + ' · ' + H.quando(nexts[0])) : 'nessuna azione',
       open: !!State.openGroups[co.id], chevron: State.openGroups[co.id] ? '▴' : '▾',
       persone: people.map(p => ({

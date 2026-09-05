@@ -135,11 +135,10 @@ def compute_stage_avg_days(conn, today):
             d = (date.fromisoformat(row["left_at"]) - date.fromisoformat(row["entered_at"])).days
             samples[row["stage"]].append(d)
 
-    for row in conn.execute("SELECT stage, stage_entered_at FROM companies"):
+    for row in conn.execute("SELECT stage, stage_entered_at FROM companies WHERE deleted_at IS NULL"):
         if row["stage"] in samples:
             d = (today - date.fromisoformat(row["stage_entered_at"])).days
-            if d:
-                samples[row["stage"]].append(d)
+            samples[row["stage"]].append(d)
 
     out = []
     for s in tracked:
