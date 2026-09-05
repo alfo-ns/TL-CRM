@@ -120,6 +120,43 @@ const clickActions = {
     const id = parseInt(t.dataset.id, 10);
     setState(s => ({ openGroups: Object.assign({}, s.openGroups, { [id]: !s.openGroups[id] }) }));
   },
+  'azienda-aggiungi-persona': (t) => {
+    const co = companyById(parseInt(t.dataset.id, 10));
+    if (!co) return;
+    setState({
+      modal: 'contact', modalTab: 'dettagli', editId: null, openRowMenu: null,
+      form: { nextStadio: co.stage, portatoDa: co.portatoDa, gestitoDa: co.gestitoDa },
+      detailId: co.id,
+    });
+  },
+  'azienda-duplica': (t) => {
+    const co = companyById(parseInt(t.dataset.id, 10));
+    if (!co) return;
+    const payload = {
+      nome: co.nome + ' (copia)', settore: co.settore, dip: co.dip, valore: co.valore, stage: co.stage,
+      portatoDa: co.portatoDa, gestitoDa: co.gestitoDa,
+      nextTipo: co.next ? co.next.tipo : undefined, nextData: co.next ? co.next.data : '',
+      email: co.email, sitoWeb: co.sitoWeb, note: co.note,
+    };
+    mutate(Api.createCompany(payload)).then((fresh) => {
+      if (!fresh) return;
+      setState({ openRowMenu: null });
+    });
+  },
+  'azienda-elimina': (t) => {
+    if (!confirm('Spostare questa azienda e i suoi contatti nel cestino?')) return;
+    mutate(Api.deleteCompany(parseInt(t.dataset.id, 10))).then((fresh) => { if (fresh) setState({ openRowMenu: null }); });
+  },
+  'trash-restore-company': (t) => mutate(Api.restoreCompany(parseInt(t.dataset.id, 10))),
+  'trash-purge-company': (t) => {
+    if (!confirm('Eliminare definitivamente questa azienda? L\'operazione non è reversibile.')) return;
+    mutate(Api.purgeCompany(parseInt(t.dataset.id, 10)));
+  },
+  'trash-restore-contact': (t) => mutate(Api.restoreContact(parseInt(t.dataset.id, 10))),
+  'trash-purge-contact': (t) => {
+    if (!confirm('Eliminare definitivamente questo contatto? L\'operazione non è reversibile.')) return;
+    mutate(Api.purgeContact(parseInt(t.dataset.id, 10)));
+  },
   'cal-prev': () => setState(s => s.calM === 0 ? { calY: s.calY - 1, calM: 11 } : { calM: s.calM - 1 }),
   'cal-next': () => setState(s => s.calM === 11 ? { calY: s.calY + 1, calM: 0 } : { calM: s.calM + 1 }),
 
@@ -214,6 +251,7 @@ function saveModal() {
       nome: f.nome, settore: f.settore, dip: f.dip, valore: f.valore, stage: f.stage,
       portatoDa: f.portatoDa, gestitoDa: f.gestitoDa,
       nextTipo: f.nextTipo, nextData: f.nextData || '',
+      email: f.email, sitoWeb: f.sitoWeb, note: f.note,
     };
     if (State.editId) {
       mutate(Api.updateCompany(State.editId, payload)).then((fresh) => { if (fresh) setState({ modal: null, editId: null, form: {} }); });

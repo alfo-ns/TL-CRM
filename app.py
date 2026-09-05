@@ -44,9 +44,26 @@ def serialize_company(row, today):
         "portatoDa": row["portato_da"],
         "gestitoDa": row["gestito_da"],
         "bridgeId": row["bridge_id"],
+        "email": row["email"],
+        "sitoWeb": row["sito_web"],
+        "note": row["note"],
         "giorni": giorni,
         "createdAt": row["created_at"],
         "next": next_,
+    }
+
+
+def serialize_deleted_company(row):
+    return {
+        "id": row["id"], "nome": row["nome"], "settore": row["settore"],
+        "valore": row["valore"], "deletedAt": row["deleted_at"],
+    }
+
+
+def serialize_deleted_contact(row):
+    return {
+        "id": row["id"], "companyId": row["company_id"], "nome": row["nome"], "cognome": row["cognome"],
+        "ruolo": row["ruolo"], "deletedAt": row["deleted_at"],
     }
 
 
@@ -136,14 +153,38 @@ def full_bootstrap():
     conn = db.get_db()
     today = date.today()
 
-    companies = [serialize_company(r, today) for r in conn.execute("SELECT * FROM companies ORDER BY id")]
+    companies = [
+        serialize_company(r, today)
+        for r in conn.execute("SELECT * FROM companies WHERE deleted_at IS NULL ORDER BY id")
+    ]
     for c in companies:
         att_rows = conn.execute(
             "SELECT * FROM activities WHERE company_id = ? ORDER BY id DESC", (c["id"],)
         ).fetchall()
         c["attivita"] = [serialize_activity(r) for r in att_rows]
 
-    contacts = [serialize_contact(r) for r in conn.execute("SELECT * FROM contacts ORDER BY id")]
+    contacts = [
+        serialize_contact(r)
+        for r in conn.execute(
+            "SELECT contacts.* FROM contacts "
+            "JOIN companies ON companies.id = contacts.company_id "
+            "WHERE contacts.deleted_at IS NULL AND companies.deleted_at IS NULL ORDER BY contacts.id"
+        )
+    ]
+
+    trash_companies = [
+        serialize_deleted_company(r)
+        for r in conn.execute("SELECT * FROM companies WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC")
+    ]
+    trash_contacts = [
+        serialize_deleted_contact(r)
+        for r in conn.execute(
+            "SELECT contacts.* FROM contacts "
+            "JOIN companies ON companies.id = contacts.company_id "
+            "WHERE contacts.deleted_at IS NOT NULL AND companies.deleted_at IS NULL "
+            "ORDER BY contacts.deleted_at DESC"
+        )
+    ]
 
     bridges = []
     for r in conn.execute("SELECT * FROM bridges ORDER BY id"):
@@ -164,6 +205,7 @@ def full_bootstrap():
         "bridges": bridges,
         "stageAvgDays": compute_stage_avg_days(conn, today),
         "dbConfig": {"path": CONFIG["db_path"], "source": config.db_path_source()},
+        "trash": {"companies": trash_companies, "contacts": trash_contacts},
     }
 
 
@@ -200,8 +242,8 @@ def create_company():
         now_iso = today_iso()
         cur = conn.execute(
             "INSERT INTO companies (nome, settore, dip, valore, stage, max_stage_index, portato_da, gestito_da, "
-            "bridge_id, next_tipo, next_data, next_stadio, stage_entered_at, created_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?)",
+            "bridge_id, next_tipo, next_data, next_stadio, email, sito_web, note, stage_entered_at, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 body.get("nome") or "Nuova azienda",
                 body.get("settore") or "—",
@@ -214,6 +256,9 @@ def create_company():
                 next_tipo,
                 next_data,
                 next_stadio,
+                body.get("email") or "",
+                body.get("sitoWeb") or "",
+                body.get("note") or "",
                 now_iso,
                 now_iso,
             ),
@@ -273,10 +318,14 @@ def update_company(company_id):
             "valore": int(body["valore"]) if body.get("valore") not in (None, "") else row["valore"],
             "portato_da": body.get("portatoDa", row["portato_da"]),
             "gestito_da": body.get("gestitoDa", row["gestito_da"]),
+            "email": body.get("email", row["email"]),
+            "sito_web": body.get("sitoWeb", row["sito_web"]),
+            "note": body.get("note", row["note"]),
         }
         conn.execute(
-            "UPDATE companies SET nome=?, settore=?, dip=?, valore=?, portato_da=?, gestito_da=? WHERE id=?",
-            (fields["nome"], fields["settore"], fields["dip"], fields["valore"], fields["portato_da"], fields["gestito_da"], company_id),
+            "UPDATE companies SET nome=?, settore=?, dip=?, valore=?, portato_da=?, gestito_da=?, email=?, sito_web=?, note=? WHERE id=?",
+            (fields["nome"], fields["settore"], fields["dip"], fields["valore"], fields["portato_da"], fields["gestito_da"],
+             fields["email"], fields["sito_web"], fields["note"], company_id),
         )
         if "nextData" in body:
             next_tipo, next_data, next_stadio = _parse_next(body)
@@ -370,7 +419,25 @@ def add_activity(company_id):
 @app.delete("/api/companies/<int:company_id>")
 def delete_company(company_id):
     def op(conn):
-        conn.execute("DELETE FROM companies WHERE id = ?", (company_id,))
+        conn.execute("UPDATE companies SET deleted_at = ? WHERE id = ?", (today_iso(), company_id))
+
+    db.run_write(op)
+    return jsonify(full_bootstrap())
+
+
+@app.post("/api/companies/<int:company_id>/restore")
+def restore_company(company_id):
+    def op(conn):
+        conn.execute("UPDATE companies SET deleted_at = NULL WHERE id = ?", (company_id,))
+
+    db.run_write(op)
+    return jsonify(full_bootstrap())
+
+
+@app.delete("/api/companies/<int:company_id>/purge")
+def purge_company(company_id):
+    def op(conn):
+        conn.execute("DELETE FROM companies WHERE id = ? AND deleted_at IS NOT NULL", (company_id,))
 
     db.run_write(op)
     return jsonify(full_bootstrap())
@@ -470,7 +537,25 @@ def complete_contact_action(contact_id):
 @app.delete("/api/contacts/<int:contact_id>")
 def delete_contact(contact_id):
     def op(conn):
-        conn.execute("DELETE FROM contacts WHERE id = ?", (contact_id,))
+        conn.execute("UPDATE contacts SET deleted_at = ? WHERE id = ?", (today_iso(), contact_id))
+
+    db.run_write(op)
+    return jsonify(full_bootstrap())
+
+
+@app.post("/api/contacts/<int:contact_id>/restore")
+def restore_contact(contact_id):
+    def op(conn):
+        conn.execute("UPDATE contacts SET deleted_at = NULL WHERE id = ?", (contact_id,))
+
+    db.run_write(op)
+    return jsonify(full_bootstrap())
+
+
+@app.delete("/api/contacts/<int:contact_id>/purge")
+def purge_contact(contact_id):
+    def op(conn):
+        conn.execute("DELETE FROM contacts WHERE id = ? AND deleted_at IS NOT NULL", (contact_id,))
 
     db.run_write(op)
     return jsonify(full_bootstrap())

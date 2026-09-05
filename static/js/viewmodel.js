@@ -197,6 +197,7 @@ function computeViewModel() {
     detail = {
       id: co.id, nome: co.nome, settore: co.settore, dip: co.dip, stage: co.stage, valore: H.eur(co.valore), giorni: co.giorni,
       portatoDa: co.portatoDa, gestitoDa: co.gestitoDa, hasBridge: !!brDetail, bridge: brDetail ? brDetail.nome : '',
+      email: co.email, sitoWeb: co.sitoWeb, note: co.note,
       nextTipo: co.next ? co.next.tipo : 'followup', nextData: co.next ? co.next.data : '',
       nextStadioId: co.next ? co.next.stadio : co.stage, nextQuando: co.next && co.next.data ? H.quando(co.next.data) : 'da pianificare',
       noContatti: H.contactsOf(co.id).length === 0,
@@ -246,6 +247,18 @@ function computeViewModel() {
     uso: cos.filter(c => c.gestitoDa === o.nome).length + ' aziende',
   }));
 
+  const trash = Data.trash || { companies: [], contacts: [] };
+  const trashCompanies = trash.companies.map(c => ({
+    id: c.id, nome: c.nome, settore: c.settore, valore: H.eur(c.valore), deletedAt: c.deletedAt,
+  }));
+  const trashContacts = trash.contacts.map(p => {
+    const co = cos.find(c => c.id === p.companyId);
+    return {
+      id: p.id, nome: p.nome + ' ' + p.cognome, ruolo: p.ruolo,
+      azienda: co ? co.nome : 'Azienda rimossa', deletedAt: p.deletedAt,
+    };
+  });
+
   return {
     stageOptions: Data.stages, actionTypes: Data.actionTypes, operators: Data.operators,
     companyOptions: cos.map(c => ({ id: c.id, nome: c.nome })),
@@ -255,6 +268,7 @@ function computeViewModel() {
     calCells: cells, calTitle, calCount,
     plannerBadge: inRitardo + oggi, plannerBadgeBg: inRitardo ? 'oklch(0.58 0.15 25)' : 'oklch(0.6 0.03 255)',
     bridgeCards, operatorRows,
+    trashCompanies, trashContacts, trashCount: trashCompanies.length + trashContacts.length,
     hasDetail: !!detail, detail,
     kpiValoreAperto: kpi.valoreAperto, kpiAttive: kpi.attive, kpiProspect: kpi.prospect, kpiPersone: kpi.persone, kpiBridge: kpi.bridge,
   };

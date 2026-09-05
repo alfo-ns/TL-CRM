@@ -24,11 +24,15 @@ const Api = (() => {
     completeCompanyAction: (id) => req('POST', '/api/companies/' + id + '/complete-action'),
     addActivity: (id, testo) => req('POST', '/api/companies/' + id + '/activities', { testo }),
     deleteCompany: (id) => req('DELETE', '/api/companies/' + id),
+    restoreCompany: (id) => req('POST', '/api/companies/' + id + '/restore'),
+    purgeCompany: (id) => req('DELETE', '/api/companies/' + id + '/purge'),
 
     createContact: (payload) => req('POST', '/api/contacts', payload),
     updateContact: (id, payload) => req('PUT', '/api/contacts/' + id, payload),
     completeContactAction: (id) => req('POST', '/api/contacts/' + id + '/complete-action'),
     deleteContact: (id) => req('DELETE', '/api/contacts/' + id),
+    restoreContact: (id) => req('POST', '/api/contacts/' + id + '/restore'),
+    purgeContact: (id) => req('DELETE', '/api/contacts/' + id + '/purge'),
 
     createBridge: (payload) => req('POST', '/api/bridges', payload),
     updateBridge: (id, payload) => req('PUT', '/api/bridges/' + id, payload),

@@ -83,11 +83,33 @@ def run_write(fn):
     raise last_exc
 
 
+def _table_columns(conn, table):
+    return {row["name"] for row in conn.execute("PRAGMA table_info(%s)" % table)}
+
+
+def _migrate(conn):
+    """Adds columns introduced after the initial schema to pre-existing
+    databases, since CREATE TABLE IF NOT EXISTS leaves old tables untouched."""
+    company_cols = _table_columns(conn, "companies")
+    for col, ddl in (
+        ("email", "TEXT NOT NULL DEFAULT ''"),
+        ("sito_web", "TEXT NOT NULL DEFAULT ''"),
+        ("note", "TEXT NOT NULL DEFAULT ''"),
+        ("deleted_at", "TEXT"),
+    ):
+        if col not in company_cols:
+            conn.execute("ALTER TABLE companies ADD COLUMN %s %s" % (col, ddl))
+    contact_cols = _table_columns(conn, "contacts")
+    if "deleted_at" not in contact_cols:
+        conn.execute("ALTER TABLE contacts ADD COLUMN deleted_at TEXT")
+
+
 def init_db(seed_if_empty=True):
     conn = _connect()
     try:
         with open(_SCHEMA_PATH, "r", encoding="utf-8") as f:
             conn.executescript(f.read())
+        _migrate(conn)
         if seed_if_empty:
             row = conn.execute("SELECT COUNT(*) AS n FROM companies").fetchone()
             if row["n"] == 0:
