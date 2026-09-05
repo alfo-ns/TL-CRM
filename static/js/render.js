@@ -99,15 +99,32 @@ function restoreFocus(info) {
   }
 }
 
+// Elements inside #content that scroll independently and must keep their
+// scroll position across a render (which replaces the whole subtree via
+// innerHTML, resetting scrollTop and knocking focus up to <body> otherwise).
+const SCROLL_PRESERVE_SELECTORS = ['.content-main', '.drawer-body'];
+
 function render() {
   const focusInfo = captureFocus();
+  const contentEl = document.getElementById('content');
+  const scrollTop = contentEl.scrollTop;
+  const innerScrolls = SCROLL_PRESERVE_SELECTORS.map(sel => {
+    const el = contentEl.querySelector(sel);
+    return el ? el.scrollTop : null;
+  });
   const vm = computeViewModel();
   document.getElementById('app').classList.toggle('sidebar-open', State.sidebarOpen);
   document.getElementById('nav').innerHTML = navHTML(vm);
   document.getElementById('sidebar-footer').innerHTML = footerHTML(vm);
   document.getElementById('topbar').innerHTML = topbarHTML(vm);
-  document.getElementById('content').innerHTML = contentHTML(vm);
+  contentEl.innerHTML = contentHTML(vm);
   document.getElementById('overlay-root').innerHTML = overlaysHTML(vm);
+  contentEl.scrollTop = scrollTop;
+  SCROLL_PRESERVE_SELECTORS.forEach((sel, i) => {
+    if (innerScrolls[i] === null) return;
+    const el = contentEl.querySelector(sel);
+    if (el) el.scrollTop = innerScrolls[i];
+  });
   restoreFocus(focusInfo);
   applySplitWidth();
 }
@@ -774,7 +791,7 @@ function resetConfirmHTML(vm) {
           <div class="settings-desc" style="margin-top:6px">
             Per confermare, scrivi <strong>AZZERA</strong> nel campo sottostante.
           </div>
-          <input type="text" placeholder="AZZERA" value="${esc(State.resetConfirmText)}" data-bind="resetConfirmText" style="width:100%;margin-top:10px" class="mono" autofocus>
+          <input type="text" placeholder="AZZERA" value="${esc(State.resetConfirmText)}" data-focus-id="reset-confirm-text" data-bind="resetConfirmText" style="width:100%;margin-top:10px" class="mono" autofocus>
           ${State.resetError ? `<div class="settings-desc" style="margin-top:8px;color:var(--danger)">${esc(State.resetError)}</div>` : ''}
           <div class="modal-actions" style="margin-top:20px">
             <button class="btn-text" data-action="reset-cancel">Annulla</button>
@@ -890,7 +907,7 @@ function detailHTML(vm) {
         </div>
         <div class="activity-add-row">
           <input type="text" placeholder="Registra un'attività…" value="${esc(State.activityDraft)}" data-focus-id="activity-draft" data-bind="activityDraft">
-          <input type="date" value="${State.activityDateDraft || Data.today}" data-bind="activityDateDraft" style="flex:0 0 150px">
+          <input type="date" value="${State.activityDateDraft || Data.today}" data-focus-id="activity-date-draft" data-bind="activityDateDraft" style="flex:0 0 150px">
           <button class="btn" data-action="add-activity" data-id="${d.id}">Aggiungi</button>
         </div>
         <div class="activity-list">
