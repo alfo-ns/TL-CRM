@@ -10,24 +10,12 @@ import db
 import stage_logic
 import xlsx_io
 from constants import ACTION_LABEL, STAGE_INDEX, STAGE_LABEL, STAGE_ORDER, STAGES, ACTION_TYPES
+from date_utils import today_iso, today_it, format_it
 
 CONFIG = config.load_config()
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 db.init_app(app)
-
-
-def today_iso():
-    return date.today().isoformat()
-
-
-def today_it():
-    d = date.today()
-    return d.strftime("%d/%m/%Y")
-
-
-def format_it(iso_date):
-    return date.fromisoformat(iso_date).strftime("%d/%m/%Y")
 
 
 # ---------------------------------------------------------------- serializers

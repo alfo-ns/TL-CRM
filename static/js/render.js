@@ -633,7 +633,7 @@ function settingsHTML(vm) {
       </div>
       <div class="card">
         <div class="card-title">Dati</div>
-        <div class="settings-desc">Esporta aziende, contatti e bridge contact in un unico file Excel, o reimportalo dopo averlo modificato. Righe con ID esistente aggiornano il record; righe senza ID (o con ID sconosciuto) creano un nuovo record. Nessun dato viene mai cancellato.</div>
+        <div class="settings-desc">Esporta aziende, contatti, bridge contact e storico attività in un unico file Excel, o reimportalo dopo averlo modificato. Righe con ID esistente aggiornano il record; righe senza ID (o con ID sconosciuto) creano un nuovo record. Nessun dato viene mai cancellato.</div>
         <div class="data-io-row">
           <a class="btn-ghost" href="/api/export/xlsx">Esporta in Excel</a>
           <button class="btn-ghost" data-action="import-pick">Importa da Excel…</button>
@@ -724,7 +724,7 @@ function importPreviewHTML(vm) {
     </div>`;
   }
   const rows = [
-    ['Aziende', p.aziende], ['Contatti', p.contatti], ['Bridge contact', p.bridge],
+    ['Aziende', p.aziende], ['Contatti', p.contatti], ['Bridge contact', p.bridge], ['Attività', p.attivita],
   ];
   return `<div class="import-preview">
     <div class="import-preview-title">Anteprima importazione — ${State.importFileName ? esc(State.importFileName) : ''}</div>
