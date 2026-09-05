@@ -225,7 +225,9 @@ function computeViewModel() {
   const bridgeCards = Data.bridges.map(b => ({
     id: b.id, nome: b.nome, ruolo: b.ruolo, relazione: b.relazione, email: b.email, tel: b.tel, linkedin: b.linkedin,
     note: b.note, hasNote: !!b.note, introduzioni: b.introduzioni, initials: H.initials.apply(null, b.nome.split(' ')),
-    noAziende: b.aziende.length === 0,
+    noAziende: b.aziende.length === 0, nAziende: b.aziende.length,
+    open: !!State.openGroups['bridge-' + b.id],
+    chevron: State.openGroups['bridge-' + b.id] ? '▴' : '▾',
     aziende: b.aziende.map(id => {
       const c = cos.find(x => x.id === id);
       return { id, nome: c ? c.nome : 'Azienda rimossa' };

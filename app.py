@@ -7,6 +7,7 @@ from flask import Flask, jsonify, request, send_file, send_from_directory
 
 import config
 import db
+import stage_logic
 import xlsx_io
 from constants import ACTION_LABEL, STAGE_INDEX, STAGE_LABEL, STAGE_ORDER, STAGES, ACTION_TYPES
 
@@ -280,26 +281,12 @@ def create_company():
 
 
 def _move_stage(conn, company_id, new_stage, today_iso_str):
-    row = conn.execute("SELECT * FROM companies WHERE id = ?", (company_id,)).fetchone()
-    if not row or new_stage == row["stage"]:
-        return
-    conn.execute(
-        "UPDATE stage_history SET left_at = ? WHERE company_id = ? AND left_at IS NULL",
-        (today_iso_str, company_id),
-    )
-    conn.execute(
-        "INSERT INTO stage_history (company_id, stage, entered_at, left_at) VALUES (?, ?, ?, NULL)",
-        (company_id, new_stage, today_iso_str),
-    )
-    new_max = row["max_stage_index"] if new_stage == "perso" else max(row["max_stage_index"], STAGE_INDEX[new_stage])
-    conn.execute(
-        "UPDATE companies SET stage = ?, stage_entered_at = ?, max_stage_index = ? WHERE id = ?",
-        (new_stage, today_iso_str, new_max, company_id),
-    )
-    conn.execute(
-        "INSERT INTO activities (company_id, data_label, tipo, testo, created_at) VALUES (?, ?, ?, ?, ?)",
-        (company_id, today_it(), "Stadio", 'Spostata in "%s".' % STAGE_LABEL[new_stage], today_iso_str),
-    )
+    def log_activity(cid, text):
+        conn.execute(
+            "INSERT INTO activities (company_id, data_label, tipo, testo, created_at) VALUES (?, ?, ?, ?, ?)",
+            (cid, today_it(), "Stadio", text, today_iso_str),
+        )
+    stage_logic.move_stage(conn, company_id, new_stage, today_iso_str, log_activity)
 
 
 @app.put("/api/companies/<int:company_id>")
@@ -437,6 +424,16 @@ def restore_company(company_id):
 def purge_company(company_id):
     def op(conn):
         conn.execute("DELETE FROM companies WHERE id = ? AND deleted_at IS NOT NULL", (company_id,))
+
+    db.run_write(op)
+    return jsonify(full_bootstrap())
+
+
+@app.post("/api/trash/purge-all")
+def purge_all_trash():
+    def op(conn):
+        conn.execute("DELETE FROM companies WHERE deleted_at IS NOT NULL")
+        conn.execute("DELETE FROM contacts WHERE deleted_at IS NOT NULL")
 
     db.run_write(op)
     return jsonify(full_bootstrap())

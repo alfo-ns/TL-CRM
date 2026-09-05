@@ -128,7 +128,7 @@ const clickActions = {
     });
   },
   'toggle-group': (t) => {
-    const id = parseInt(t.dataset.id, 10);
+    const id = t.dataset.id;
     setState(s => ({ openGroups: Object.assign({}, s.openGroups, { [id]: !s.openGroups[id] }) }));
   },
   'azienda-aggiungi-persona': (t) => {
@@ -167,6 +167,10 @@ const clickActions = {
   'trash-purge-contact': (t) => {
     if (!confirm('Eliminare definitivamente questo contatto? L\'operazione non è reversibile.')) return;
     mutate(Api.purgeContact(parseInt(t.dataset.id, 10)));
+  },
+  'trash-purge-all': () => {
+    if (!confirm('Svuotare il cestino? Tutte le aziende e i contatti al suo interno verranno eliminati definitivamente. L\'operazione non è reversibile.')) return;
+    mutate(Api.purgeAllTrash());
   },
   'cal-prev': () => setState(s => s.calM === 0 ? { calY: s.calY - 1, calM: 11 } : { calM: s.calM - 1 }),
   'cal-next': () => setState(s => s.calM === 11 ? { calY: s.calY + 1, calM: 0 } : { calM: s.calM + 1 }),

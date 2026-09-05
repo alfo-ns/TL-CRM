@@ -12,6 +12,7 @@ from datetime import date
 
 from openpyxl import Workbook, load_workbook
 
+import stage_logic
 from constants import ACTION_LABEL, STAGE_INDEX, STAGE_LABEL, STAGE_ORDER, STAGES, ACTION_TYPES
 
 VALID_STAGES = set(STAGE_INDEX)
@@ -308,11 +309,23 @@ def apply_import(conn, plan, today_iso, today_it):
     fresh bridge_id that doesn't exist yet."""
     company_id_remap = {}  # index in company_creates -> new id, for reference if ever needed
 
-    for row_id, fields, _bridge_name in plan.company_updates:
+    def log_activity(company_id, text):
         conn.execute(
-            "UPDATE companies SET nome=?, settore=?, dip=?, valore=?, stage=?, portato_da=?, gestito_da=?, "
+            "INSERT INTO activities (company_id, data_label, tipo, testo, created_at) VALUES (?, ?, ?, ?, ?)",
+            (company_id, today_it, "Import", text, today_iso),
+        )
+
+    for row_id, fields, _bridge_name in plan.company_updates:
+        # Stage changes go through move_stage first, so stage_history and
+        # max_stage_index (what the funnel/conversion/time-per-stage stats
+        # are built from) stay consistent — a plain UPDATE of the stage
+        # column alone would leave those stale, making the dashboard look
+        # like it "ignores" imported stage changes.
+        stage_logic.move_stage(conn, row_id, fields["stage"], today_iso, log_activity)
+        conn.execute(
+            "UPDATE companies SET nome=?, settore=?, dip=?, valore=?, portato_da=?, gestito_da=?, "
             "next_tipo=?, next_data=?, next_stadio=?, email=?, sito_web=?, note=? WHERE id=?",
-            (fields["nome"], fields["settore"], fields["dip"], fields["valore"], fields["stage"],
+            (fields["nome"], fields["settore"], fields["dip"], fields["valore"],
              fields["portato_da"], fields["gestito_da"], fields["next_tipo"], fields["next_data"],
              fields["next_stadio"], fields["email"], fields["sito_web"], fields["note"], row_id),
         )
