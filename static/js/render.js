@@ -506,6 +506,7 @@ function contattiHTML(vm) {
               <div class="group-actions">
                 <button class="btn-ghost btn-sm" data-action="open-detail-stop" data-id="${g.id}">Scheda</button>
                 ${rowMenuHTML('azienda-' + g.id, [
+                  { action: 'edit-company', id: g.id, label: 'Modifica' },
                   { action: 'azienda-aggiungi-persona', id: g.id, label: '+ Persona' },
                   { action: 'azienda-duplica', id: g.id, label: 'Duplica' },
                   { action: 'azienda-elimina', id: g.id, label: 'Elimina', danger: true },
@@ -568,8 +569,10 @@ function bridgeHTML(vm) {
               <option value="tutti">Collega azienda…</option>
               ${vm.companyOptions.map(c => `<option value="${c.id}">${esc(c.nome)}</option>`).join('')}
             </select>
-            <button class="btn-ghost" data-action="edit-bridge" data-id="${b.id}">Modifica</button>
-            <button class="btn-danger" data-action="delete-bridge" data-id="${b.id}">Elimina</button>
+            ${rowMenuHTML('bridge-' + b.id, [
+              { action: 'edit-bridge', id: b.id, label: 'Modifica' },
+              { action: 'delete-bridge', id: b.id, label: 'Elimina', danger: true },
+            ])}
           </div>
         </div>`).join('')}
     </div>
@@ -733,9 +736,11 @@ function detailHTML(vm) {
           <select data-action="detail-stage">${stageOptionsHTML(d.stage, false)}</select>
           <div class="mono" style="font-size:16px;font-weight:600;margin-left:2px">${d.valore}</div>
           <div style="font-size:12px;color:var(--text-dimmer)">· ${d.giorni}g in stadio</div>
-          <div style="margin-left:auto;display:flex;gap:6px">
-            <button class="btn-ghost" data-action="edit-company" data-id="${d.id}">Modifica</button>
-            <button class="btn-danger" data-action="delete-company" data-id="${d.id}">Elimina</button>
+          <div style="margin-left:auto">
+            ${rowMenuHTML('detail-company-' + d.id, [
+              { action: 'edit-company', id: d.id, label: 'Modifica' },
+              { action: 'delete-company', id: d.id, label: 'Elimina', danger: true },
+            ])}
           </div>
         </div>
         <div class="drawer-meta-row">
@@ -773,8 +778,10 @@ function detailHTML(vm) {
                 <div style="min-width:0"><div class="person-card-name">${esc(p.nomeCompleto)}</div><div class="person-card-role">${esc(p.ruolo)}</div></div>
                 <div class="person-card-actions">
                   <button class="btn-ghost btn-sm" data-action="toggle-dossier" data-id="${p.id}">${p.dossierLabel}</button>
-                  <button class="btn-ghost btn-sm" data-action="edit-contact" data-id="${p.id}">Modifica</button>
-                  <button class="btn-danger btn-sm" data-action="delete-contact" data-id="${p.id}">Elimina</button>
+                  ${rowMenuHTML('person-card-' + p.id, [
+                    { action: 'edit-contact', id: p.id, label: 'Modifica' },
+                    { action: 'delete-contact', id: p.id, label: 'Elimina', danger: true },
+                  ])}
                 </div>
               </div>
               <div class="person-fields">
