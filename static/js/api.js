@@ -33,6 +33,7 @@ const Api = (() => {
     deleteContact: (id) => req('DELETE', '/api/contacts/' + id),
     restoreContact: (id) => req('POST', '/api/contacts/' + id + '/restore'),
     purgeContact: (id) => req('DELETE', '/api/contacts/' + id + '/purge'),
+    purgeAllTrash: () => req('POST', '/api/trash/purge-all'),
 
     createBridge: (payload) => req('POST', '/api/bridges', payload),
     updateBridge: (id, payload) => req('PUT', '/api/bridges/' + id, payload),

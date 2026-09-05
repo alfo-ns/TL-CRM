@@ -540,40 +540,57 @@ function bridgeHTML(vm) {
       <p>Persone che non sono lead ma possono aprire porte: referral, partner, ex colleghi, associazioni. Collegali alle aziende che possono presentarti.</p>
       <button class="btn" style="margin-left:auto" data-action="new-bridge">+ Bridge</button>
     </div>
-    <div class="bridge-grid">
-      ${vm.bridgeCards.map(b => `
-        <div class="bridge-card">
-          <div class="bridge-head">
-            <span class="avatar avatar-xl">${b.initials}</span>
-            <div style="min-width:0"><div class="bridge-name">${esc(b.nome)}</div><div class="bridge-role">${esc(b.ruolo)}</div></div>
-            <span class="bridge-rel">${esc(b.relazione)}</span>
+    <div class="groups">
+      <div class="group-head group-head-labels bridge-row-grid">
+        ${sortHeaderHTML('bridge', 'nome', 'Nome')}
+        ${sortHeaderHTML('bridge', 'relazione', 'Relazione')}
+        <div>Contatti</div>
+        <div>Aziende collegate</div>
+        <div></div>
+      </div>
+      ${sortRows('bridge', vm.bridgeCards, { nome: b => b.nome, relazione: b => b.relazione }).map(b => `
+        <div class="group">
+          <div class="group-head bridge-row-grid" data-action="toggle-group" data-id="bridge-${b.id}">
+            <div style="display:flex;align-items:center;gap:10px;min-width:0">
+              <span class="avatar avatar-md">${b.initials}</span>
+              <div style="min-width:0">
+                <div class="ellipsis" style="font-weight:600;letter-spacing:-0.01em">${esc(b.nome)}</div>
+                <div style="font-size:11px;color:var(--text-faint)">${esc(b.ruolo)}</div>
+              </div>
+            </div>
+            <div><span class="bridge-rel">${esc(b.relazione)}</span></div>
+            <div class="ellipsis" style="font-size:12px;color:var(--text-dim)">
+              <div class="ellipsis">${esc(b.email)}</div>
+              <div class="mono" style="font-size:11px;color:var(--text-faint)">${esc(b.tel)}</div>
+            </div>
+            <div style="font-size:12px;color:var(--text-dim)">${b.noAziende ? 'Nessun collegamento' : b.nAziende + ' azienda/e'}</div>
+            <div class="group-actions">
+              ${rowMenuHTML('bridge-' + b.id, [
+                { action: 'edit-bridge', id: b.id, label: 'Modifica' },
+                { action: 'delete-bridge', id: b.id, label: 'Elimina', danger: true },
+              ])}
+              <span style="font-size:12px;color:var(--text-dimmer);width:12px;text-align:center">${b.chevron}</span>
+            </div>
           </div>
-          <div class="bridge-meta">
-            <div class="ellipsis">${esc(b.email)}</div>
-            <div class="mono">${esc(b.tel)}</div>
-            <div>LinkedIn · ${esc(b.linkedin)}</div>
-            <div>Introduzioni · ${b.introduzioni}</div>
-          </div>
-          ${b.hasNote ? `<div class="bridge-note">${esc(b.note)}</div>` : ''}
-          <div class="bridge-label">Può presentarti a</div>
-          <div class="bridge-companies">
-            ${b.aziende.map(a => `
-              <span class="bridge-chip">
-                <span class="nm" data-action="open-detail" data-id="${a.id}">${esc(a.nome)}</span>
-                <span class="rm" data-action="bridge-unlink" data-bridge-id="${b.id}" data-company-id="${a.id}">✕</span>
-              </span>`).join('')}
-            ${b.noAziende ? `<span style="font-size:12px;color:var(--text-faint)">Nessun collegamento</span>` : ''}
-          </div>
-          <div class="bridge-actions">
-            <select data-action="bridge-link" data-bridge-id="${b.id}">
-              <option value="tutti">Collega azienda…</option>
-              ${vm.companyOptions.map(c => `<option value="${c.id}">${esc(c.nome)}</option>`).join('')}
-            </select>
-            ${rowMenuHTML('bridge-' + b.id, [
-              { action: 'edit-bridge', id: b.id, label: 'Modifica' },
-              { action: 'delete-bridge', id: b.id, label: 'Elimina', danger: true },
-            ])}
-          </div>
+          ${b.open ? `
+            <div class="group-body">
+              ${b.hasNote ? `<div class="bridge-note">${esc(b.note)}</div>` : ''}
+              <div class="bridge-label">Può presentarti a</div>
+              <div class="bridge-companies">
+                ${b.aziende.map(a => `
+                  <span class="bridge-chip">
+                    <span class="nm" data-action="open-detail" data-id="${a.id}">${esc(a.nome)}</span>
+                    <span class="rm" data-action="bridge-unlink" data-bridge-id="${b.id}" data-company-id="${a.id}">✕</span>
+                  </span>`).join('')}
+                ${b.noAziende ? `<span style="font-size:12px;color:var(--text-faint)">Nessun collegamento</span>` : ''}
+              </div>
+              <div class="bridge-actions">
+                <select data-action="bridge-link" data-bridge-id="${b.id}">
+                  <option value="tutti">Collega azienda…</option>
+                  ${vm.companyOptions.map(c => `<option value="${c.id}">${esc(c.nome)}</option>`).join('')}
+                </select>
+              </div>
+            </div>` : ''}
         </div>`).join('')}
     </div>
   `;
@@ -623,11 +640,15 @@ function settingsHTML(vm) {
 }
 
 function trashHTML(vm) {
+  const hasItems = vm.trashCompanies.length || vm.trashContacts.length;
   return `
     <div class="card">
-      <div class="card-title">Cestino${vm.trashCount ? ' · ' + vm.trashCount : ''}</div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div class="card-title">Cestino${vm.trashCount ? ' · ' + vm.trashCount : ''}</div>
+        ${hasItems ? `<button class="btn-danger btn-sm" data-action="trash-purge-all">Svuota cestino</button>` : ''}
+      </div>
       <div class="settings-desc">Aziende e contatti eliminati restano qui finché non li ripristini o li elimini definitivamente.</div>
-      ${vm.trashCompanies.length || vm.trashContacts.length ? `
+      ${hasItems ? `
         <div class="trash-list">
           ${vm.trashCompanies.map(c => `
             <div class="trash-row">
