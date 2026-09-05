@@ -22,7 +22,10 @@ const Api = (() => {
     moveCompanyStage: (id, stage) => req('POST', '/api/companies/' + id + '/stage', { stage }),
     setCompanyNext: (id, payload) => req('POST', '/api/companies/' + id + '/next', payload),
     completeCompanyAction: (id) => req('POST', '/api/companies/' + id + '/complete-action'),
-    addActivity: (id, testo) => req('POST', '/api/companies/' + id + '/activities', { testo }),
+    addActivity: (id, testo, data) => req('POST', '/api/companies/' + id + '/activities', { testo, data }),
+    updateActivity: (id, testo, data) => req('PUT', '/api/activities/' + id, { testo, data }),
+    deleteActivity: (id) => req('DELETE', '/api/activities/' + id),
+    clearActivities: (companyId) => req('DELETE', '/api/companies/' + companyId + '/activities'),
     deleteCompany: (id) => req('DELETE', '/api/companies/' + id),
     restoreCompany: (id) => req('POST', '/api/companies/' + id + '/restore'),
     purgeCompany: (id) => req('DELETE', '/api/companies/' + id + '/purge'),
@@ -49,6 +52,7 @@ const Api = (() => {
     importApply: (file) => reqFile('/api/import/xlsx/apply', file),
 
     setDbPath: (path) => req('POST', '/api/config/db-path', { path }),
+    resetCrm: (confirmText) => req('POST', '/api/reset', { confirm: confirmText }),
   };
 
   async function reqFile(url, file) {

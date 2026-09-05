@@ -107,6 +107,11 @@ def _migrate(conn):
         contact_cols = _table_columns(conn, "contacts")
         if "deleted_at" not in contact_cols:
             conn.execute("ALTER TABLE contacts ADD COLUMN deleted_at TEXT")
+    if "activities" in _existing_tables(conn):
+        activity_cols = _table_columns(conn, "activities")
+        if "activity_date" not in activity_cols:
+            conn.execute("ALTER TABLE activities ADD COLUMN activity_date TEXT NOT NULL DEFAULT ''")
+            conn.execute("UPDATE activities SET activity_date = created_at WHERE activity_date = ''")
 
 
 def _existing_tables(conn):

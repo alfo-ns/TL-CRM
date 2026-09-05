@@ -26,6 +26,10 @@ def today_it():
     return d.strftime("%d/%m/%Y")
 
 
+def format_it(iso_date):
+    return date.fromisoformat(iso_date).strftime("%d/%m/%Y")
+
+
 # ---------------------------------------------------------------- serializers
 
 def serialize_company(row, today):
@@ -69,7 +73,10 @@ def serialize_deleted_contact(row):
 
 
 def serialize_activity(row):
-    return {"data": row["data_label"], "tipo": row["tipo"], "testo": row["testo"]}
+    return {
+        "id": row["id"], "data": row["data_label"], "activityDate": row["activity_date"],
+        "tipo": row["tipo"], "testo": row["testo"],
+    }
 
 
 def serialize_contact(row):
@@ -159,7 +166,7 @@ def full_bootstrap():
     ]
     for c in companies:
         att_rows = conn.execute(
-            "SELECT * FROM activities WHERE company_id = ? ORDER BY id DESC", (c["id"],)
+            "SELECT * FROM activities WHERE company_id = ? ORDER BY activity_date DESC, id DESC", (c["id"],)
         ).fetchall()
         c["attivita"] = [serialize_activity(r) for r in att_rows]
 
@@ -269,8 +276,9 @@ def create_company():
             (company_id, stage, now_iso),
         )
         conn.execute(
-            "INSERT INTO activities (company_id, data_label, tipo, testo, created_at) VALUES (?, ?, ?, ?, ?)",
-            (company_id, today_it(), "Creazione", "Azienda aggiunta al CRM.", now_iso),
+            "INSERT INTO activities (company_id, data_label, activity_date, tipo, testo, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (company_id, today_it(), now_iso, "Creazione", "Azienda aggiunta al CRM.", now_iso),
         )
         return company_id
 
@@ -283,8 +291,9 @@ def create_company():
 def _move_stage(conn, company_id, new_stage, today_iso_str):
     def log_activity(cid, text):
         conn.execute(
-            "INSERT INTO activities (company_id, data_label, tipo, testo, created_at) VALUES (?, ?, ?, ?, ?)",
-            (cid, today_it(), "Stadio", text, today_iso_str),
+            "INSERT INTO activities (company_id, data_label, activity_date, tipo, testo, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (cid, today_it(), today_iso_str, "Stadio", text, today_iso_str),
         )
     stage_logic.move_stage(conn, company_id, new_stage, today_iso_str, log_activity)
 
@@ -377,8 +386,10 @@ def complete_company_action(company_id):
             (company_id,),
         )
         conn.execute(
-            "INSERT INTO activities (company_id, data_label, tipo, testo, created_at) VALUES (?, ?, ?, ?, ?)",
-            (company_id, today_it(), label, "Azione completata sulla trattativa (obiettivo: %s)." % stage_label, today_iso()),
+            "INSERT INTO activities (company_id, data_label, activity_date, tipo, testo, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (company_id, today_it(), today_iso(), label,
+             "Azione completata sulla trattativa (obiettivo: %s)." % stage_label, today_iso()),
         )
 
     db.run_write(op)
@@ -391,12 +402,59 @@ def add_activity(company_id):
     testo = (body.get("testo") or "").strip()
     if not testo:
         return jsonify({"error": "empty"}), 400
+    activity_date = body.get("data") or today_iso()
+    try:
+        data_label = format_it(activity_date)
+    except ValueError:
+        return jsonify({"error": "data non valida"}), 400
 
     def op(conn):
         conn.execute(
-            "INSERT INTO activities (company_id, data_label, tipo, testo, created_at) VALUES (?, ?, ?, ?, ?)",
-            (company_id, today_it(), "Nota", testo, today_iso()),
+            "INSERT INTO activities (company_id, data_label, activity_date, tipo, testo, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (company_id, data_label, activity_date, "Nota", testo, today_iso()),
         )
+
+    db.run_write(op)
+    return jsonify(full_bootstrap())
+
+
+@app.put("/api/activities/<int:activity_id>")
+def update_activity(activity_id):
+    body = request.get_json(force=True) or {}
+    testo = (body.get("testo") or "").strip()
+    if not testo:
+        return jsonify({"error": "empty"}), 400
+    activity_date = body.get("data")
+
+    def op(conn):
+        row = conn.execute("SELECT * FROM activities WHERE id = ?", (activity_id,)).fetchone()
+        if not row:
+            return
+        new_date = activity_date or row["activity_date"]
+        data_label = format_it(new_date) if new_date else row["data_label"]
+        conn.execute(
+            "UPDATE activities SET testo = ?, activity_date = ?, data_label = ? WHERE id = ?",
+            (testo, new_date, data_label, activity_id),
+        )
+
+    db.run_write(op)
+    return jsonify(full_bootstrap())
+
+
+@app.delete("/api/activities/<int:activity_id>")
+def delete_activity(activity_id):
+    def op(conn):
+        conn.execute("DELETE FROM activities WHERE id = ?", (activity_id,))
+
+    db.run_write(op)
+    return jsonify(full_bootstrap())
+
+
+@app.delete("/api/companies/<int:company_id>/activities")
+def clear_activities(company_id):
+    def op(conn):
+        conn.execute("DELETE FROM activities WHERE company_id = ?", (company_id,))
 
     db.run_write(op)
     return jsonify(full_bootstrap())
@@ -522,8 +580,10 @@ def complete_contact_action(contact_id):
             (contact_id,),
         )
         conn.execute(
-            "INSERT INTO activities (company_id, data_label, tipo, testo, created_at) VALUES (?, ?, ?, ?, ?)",
-            (row["company_id"], today_it(), label, "%s con %s %s completata." % (label, row["nome"], row["cognome"]), today_iso()),
+            "INSERT INTO activities (company_id, data_label, activity_date, tipo, testo, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (row["company_id"], today_it(), today_iso(), label,
+             "%s con %s %s completata." % (label, row["nome"], row["cognome"]), today_iso()),
         )
 
     db.run_write(op)
@@ -616,8 +676,9 @@ def link_bridge(bridge_id):
             return
         conn.execute("UPDATE companies SET bridge_id = ? WHERE id = ?", (bridge_id, company_id))
         conn.execute(
-            "INSERT INTO activities (company_id, data_label, tipo, testo, created_at) VALUES (?, ?, ?, ?, ?)",
-            (company_id, today_it(), "Bridge", "Collegata al bridge contact %s." % bridge["nome"], today_iso()),
+            "INSERT INTO activities (company_id, data_label, activity_date, tipo, testo, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (company_id, today_it(), today_iso(), "Bridge", "Collegata al bridge contact %s." % bridge["nome"], today_iso()),
         )
 
     db.run_write(op)
@@ -705,6 +766,20 @@ def set_db_path():
     return jsonify({"path": new_path, "requiresRestart": True})
 
 
+@app.post("/api/reset")
+def reset_crm():
+    body = request.get_json(force=True) or {}
+    if (body.get("confirm") or "").strip().upper() != "AZZERA":
+        return jsonify({"error": "conferma mancante o errata"}), 400
+
+    def op(conn):
+        for table in ("activities", "stage_history", "contacts", "companies", "bridges"):
+            conn.execute("DELETE FROM %s" % table)
+
+    db.run_write(op)
+    return jsonify(full_bootstrap())
+
+
 # --------------------------------------------------------------- export/import
 
 @app.get("/api/export/xlsx")
@@ -766,7 +841,7 @@ def _open_browser(host, port):
 
 if __name__ == "__main__":
     with app.app_context():
-        db.init_db()
+        db.init_db(seed_if_empty=False)
     if CONFIG["open_browser"]:
         threading.Timer(1.0, _open_browser, args=(CONFIG["host"], CONFIG["port"])).start()
     app.run(host=CONFIG["host"], port=CONFIG["port"], debug=False)

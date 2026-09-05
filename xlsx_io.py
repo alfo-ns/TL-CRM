@@ -311,8 +311,9 @@ def apply_import(conn, plan, today_iso, today_it):
 
     def log_activity(company_id, text):
         conn.execute(
-            "INSERT INTO activities (company_id, data_label, tipo, testo, created_at) VALUES (?, ?, ?, ?, ?)",
-            (company_id, today_it, "Import", text, today_iso),
+            "INSERT INTO activities (company_id, data_label, activity_date, tipo, testo, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (company_id, today_it, today_iso, "Import", text, today_iso),
         )
 
     for row_id, fields, _bridge_name in plan.company_updates:
@@ -348,8 +349,9 @@ def apply_import(conn, plan, today_iso, today_it):
             (new_id, fields["stage"], today_iso),
         )
         conn.execute(
-            "INSERT INTO activities (company_id, data_label, tipo, testo, created_at) VALUES (?, ?, ?, ?, ?)",
-            (new_id, today_it, "Import", "Azienda creata da importazione XLSX.", today_iso),
+            "INSERT INTO activities (company_id, data_label, activity_date, tipo, testo, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (new_id, today_it, today_iso, "Import", "Azienda creata da importazione XLSX.", today_iso),
         )
 
     for row_id, fields, _company_ref in plan.contact_updates:
