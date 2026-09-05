@@ -436,7 +436,10 @@ function contattiHTML(vm) {
               ${r.hasNext ? `<div class="next-chip" style="background:${r.nextBg};color:${r.nextFg}"><div style="font-weight:600">${r.nextTipo} · ${r.nextQuando}</div><div style="opacity:.85">${esc(r.owner)}</div></div>` : `<span style="font-size:11px;color:var(--text-faint)">—</span>`}
             </div>
             <div>${!selectMode ? rowMenuHTML('contatto-' + r.id, [
+              { action: 'edit-contact', id: r.id, label: 'Modifica' },
+              { action: 'edit-dossier', id: r.id, label: 'Dossier' },
               { action: 'contatto-duplica', id: r.id, label: 'Duplica' },
+              { action: 'delete-contact', id: r.id, label: 'Elimina', danger: true },
             ]) : ''}</div>
           </div>`).join('')}
         ${vm.noRows ? `<div class="empty-state">Nessun contatto corrisponde ai filtri.</div>` : ''}
