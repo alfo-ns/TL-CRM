@@ -14,6 +14,7 @@ from openpyxl import Workbook, load_workbook
 
 import stage_logic
 from constants import ACTION_LABEL, STAGE_INDEX, STAGE_LABEL, STAGE_ORDER, STAGES, ACTION_TYPES
+from date_utils import format_it
 
 VALID_STAGES = set(STAGE_INDEX)
 VALID_ACTIONS = set(ACTION_LABEL)
@@ -36,6 +37,9 @@ CONTACT_HEADERS = [
 BRIDGE_HEADERS = [
     "ID", "Nome", "Ruolo", "Relazione", "Email", "Telefono", "LinkedIn", "Note",
     "Aziende collegate",
+]
+ACTIVITY_HEADERS = [
+    "ID", "ID Azienda", "Data", "Tipo", "Testo",
 ]
 
 _BRIDGE_SEP = ";"
@@ -99,6 +103,17 @@ def build_workbook(conn):
         ws.append([
             b["id"], b["nome"], b["ruolo"], b["relazione"], b["email"], b["tel"], b["linkedin"], b["note"],
             _BRIDGE_SEP.join(linked),
+        ])
+    _autosize(ws)
+
+    ws = wb.create_sheet("Attività")
+    ws.append(ACTIVITY_HEADERS)
+    for a in conn.execute(
+        "SELECT activities.* FROM activities JOIN companies ON companies.id = activities.company_id "
+        "WHERE companies.deleted_at IS NULL ORDER BY activities.id"
+    ):
+        ws.append([
+            a["id"], a["company_id"], a["activity_date"] or "", a["tipo"], a["testo"],
         ])
     _autosize(ws)
 
@@ -169,6 +184,8 @@ class ImportPlan:
         self.contact_creates = []   # (fields dict, company_ref)
         self.bridge_updates = []    # (id, fields dict, linked_company_names)
         self.bridge_creates = []    # (fields dict, linked_company_names)
+        self.activity_updates = []  # (id, fields dict)
+        self.activity_creates = []  # (fields dict, company_ref)
         self.errors = []            # list of {"sheet", "row", "message"}
 
     def summary(self):
@@ -176,6 +193,7 @@ class ImportPlan:
             "aziende": {"aggiornate": len(self.company_updates), "nuove": len(self.company_creates)},
             "contatti": {"aggiornate": len(self.contact_updates), "nuove": len(self.contact_creates)},
             "bridge": {"aggiornate": len(self.bridge_updates), "nuove": len(self.bridge_creates)},
+            "attivita": {"aggiornate": len(self.activity_updates), "nuove": len(self.activity_creates)},
             "errori": self.errors,
             "ok": len(self.errors) == 0,
         }
@@ -297,6 +315,41 @@ def parse_workbook(file_stream, conn):
         else:
             plan.bridge_creates.append((fields, linked_names))
 
+    # ---- Attività ----
+    existing_activity_ids = {r["id"] for r in conn.execute("SELECT id FROM activities")}
+    for i, row in enumerate(_read_sheet(wb, "Attività", ACTIVITY_HEADERS), start=2):
+        a = dict(zip(ACTIVITY_HEADERS, row))
+        company_ref = a["ID Azienda"]
+        if company_ref in (None, ""):
+            plan.errors.append({"sheet": "Attività", "row": i, "message": "ID Azienda mancante"})
+            continue
+        company_ref = _int(company_ref, default=None)
+        if company_ref is None or company_ref not in existing_company_ids:
+            plan.errors.append({"sheet": "Attività", "row": i, "message": f"Azienda con ID {a['ID Azienda']} non trovata"})
+            continue
+        testo = _str(a["Testo"])
+        if not testo:
+            plan.errors.append({"sheet": "Attività", "row": i, "message": "Testo mancante"})
+            continue
+        activity_date = _date_str(a["Data"])
+        if not activity_date:
+            plan.errors.append({"sheet": "Attività", "row": i, "message": "Data mancante"})
+            continue
+        try:
+            data_label = format_it(activity_date)
+        except ValueError:
+            plan.errors.append({"sheet": "Attività", "row": i, "message": f"Data '{activity_date}' non valida"})
+            continue
+        fields = {
+            "activity_date": activity_date, "data_label": data_label,
+            "tipo": _str(a["Tipo"]) or "Nota", "testo": testo,
+        }
+        row_id = _int(a["ID"], default=None) if a["ID"] not in (None, "") else None
+        if row_id is not None and row_id in existing_activity_ids:
+            plan.activity_updates.append((row_id, fields))
+        else:
+            plan.activity_creates.append((fields, company_ref))
+
     return plan
 
 
@@ -410,3 +463,16 @@ def apply_import(conn, plan, today_iso, today_it):
             cid = company_name_to_id.get(name)
             if cid is not None:
                 conn.execute("UPDATE companies SET bridge_id = ? WHERE id = ?", (row_id, cid))
+
+    for row_id, fields in plan.activity_updates:
+        conn.execute(
+            "UPDATE activities SET activity_date=?, data_label=?, tipo=?, testo=? WHERE id=?",
+            (fields["activity_date"], fields["data_label"], fields["tipo"], fields["testo"], row_id),
+        )
+
+    for fields, company_ref in plan.activity_creates:
+        conn.execute(
+            "INSERT INTO activities (company_id, data_label, activity_date, tipo, testo, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (company_ref, fields["data_label"], fields["activity_date"], fields["tipo"], fields["testo"], today_iso),
+        )

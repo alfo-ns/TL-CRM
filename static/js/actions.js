@@ -255,7 +255,8 @@ const clickActions = {
       alert('Importazione completata: ' +
         s.aziende.nuove + ' aziende nuove / ' + s.aziende.aggiornate + ' aggiornate, ' +
         s.contatti.nuove + ' contatti nuovi / ' + s.contatti.aggiornate + ' aggiornati, ' +
-        s.bridge.nuove + ' bridge nuovi / ' + s.bridge.aggiornate + ' aggiornati.' +
+        s.bridge.nuove + ' bridge nuovi / ' + s.bridge.aggiornate + ' aggiornati, ' +
+        s.attivita.nuove + ' attività nuove / ' + s.attivita.aggiornate + ' aggiornate.' +
         (s.errori.length ? '\n' + s.errori.length + ' righe scartate per errori.' : ''));
     }).catch((e) => alert('Errore durante l\'importazione: ' + e.message));
   },
