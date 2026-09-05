@@ -272,6 +272,6 @@ function computeViewModel() {
     bridgeCards, operatorRows,
     trashCompanies, trashContacts, trashCount: trashCompanies.length + trashContacts.length,
     hasDetail: !!detail, detail,
-    kpiValoreAperto: kpi.valoreAperto, kpiAttive: kpi.attive, kpiProspect: kpi.prospect, kpiPersone: kpi.persone, kpiBridge: kpi.bridge,
+    kpiValoreAperto: kpi.valoreAperto, kpiAttive: kpi.attive, kpiProspect: kpi.prospect, kpiPersone: kpi.persone, kpiBridge: kpi.bridge, kpiAziende: kpi.aziende,
   };
 }

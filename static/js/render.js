@@ -10,7 +10,10 @@ let State = {
   dbPathDraft: null, dbPathMessage: null,
   contattiSelectMode: false, contattiSelected: {},
   openRowMenu: null,
-  sort: { persone: null, aziende: null },
+  sort: { persone: null, aziende: null, bridge: null },
+  resetConfirmOpen: false, resetConfirmStep: 1, resetConfirmText: '', resetError: null,
+  aziendeSelectMode: false, aziendeSelected: {},
+  activityDateDraft: '', editingActivityId: null, editingActivityText: '', editingActivityDate: '',
 };
 
 function setState(patch) {
@@ -129,7 +132,7 @@ function navHTML(vm) {
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'pipeline', label: 'Pipeline', count: vm.kpiAttive },
     { id: 'planner', label: 'Planner', badge: vm.plannerBadge, badgeBg: vm.plannerBadgeBg },
-    { id: 'contatti', label: 'Contatti', count: vm.kpiPersone },
+    { id: 'contatti', label: 'Contatti', count: vm.kpiPersone + '/' + vm.kpiAziende },
     { id: 'bridge', label: 'Bridge contact', count: vm.kpiBridge },
     { id: 'impostazioni', label: 'Impostazioni' },
   ];
@@ -420,21 +423,22 @@ function plannerHTML(vm) {
 
 function contattiHTML(vm) {
   const personeTab = State.contattiMode === 'persone';
-  const selectMode = State.contattiSelectMode;
-  const selectedIds = Object.keys(State.contattiSelected).filter(id => State.contattiSelected[id]).map(Number);
+  const selectMode = personeTab ? State.contattiSelectMode : State.aziendeSelectMode;
+  const selectedStore = personeTab ? State.contattiSelected : State.aziendeSelected;
+  const selectedIds = Object.keys(selectedStore).filter(id => selectedStore[id]).map(Number);
   const selectedCount = selectedIds.length;
+  const toggleAction = personeTab ? 'contatti-toggle-select' : 'aziende-toggle-select';
+  const deleteAction = personeTab ? 'contatti-delete-selected' : 'aziende-delete-selected';
   return `
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
       <div class="tabs">
         <button class="tab-btn ${personeTab ? 'active' : ''}" data-action="contatti-mode" data-mode="persone">Persone</button>
         <button class="tab-btn ${!personeTab ? 'active' : ''}" data-action="contatti-mode" data-mode="aziende">Aziende</button>
       </div>
-      ${personeTab ? `
-        <button class="btn-ghost btn-sm" data-action="contatti-toggle-select">${selectMode ? 'Annulla selezione' : 'Seleziona'}</button>
-        ${selectMode && selectedCount ? `
-          <span style="font-size:12px;color:var(--text-dimmer)">${selectedCount} selezionati</span>
-          <button class="btn-danger btn-sm" data-action="contatti-delete-selected">Elimina selezionati</button>
-        ` : ''}
+      <button class="btn-ghost btn-sm" data-action="${toggleAction}">${selectMode ? 'Annulla selezione' : 'Seleziona'}</button>
+      ${selectMode && selectedCount ? `
+        <span style="font-size:12px;color:var(--text-dimmer)">${selectedCount} selezionati</span>
+        <button class="btn-danger btn-sm" data-action="${deleteAction}">Elimina selezionati</button>
       ` : ''}
     </div>
     ${personeTab ? `
@@ -482,7 +486,8 @@ function contattiHTML(vm) {
       </div>
     ` : `
       <div class="groups">
-        <div class="group-head group-head-labels">
+        <div class="group-head group-head-labels ${selectMode ? 'group-head-select' : ''}">
+          ${selectMode ? '<div></div>' : ''}
           ${sortHeaderHTML('aziende', 'nome', 'Azienda')}
           ${sortHeaderHTML('aziende', 'stage', 'Stadio')}
           ${sortHeaderHTML('aziende', 'valore', 'Valore')}
@@ -494,7 +499,8 @@ function contattiHTML(vm) {
           nome: g => g.nome, stage: g => g.stage, valore: g => g.valoreNum,
         }).map(g => `
           <div class="group">
-            <div class="group-head" data-action="toggle-group" data-id="${g.id}">
+            <div class="group-head ${selectMode ? 'group-head-select' : ''}" data-action="${selectMode ? 'aziende-toggle-row' : 'toggle-group'}" data-id="${g.id}">
+              ${selectMode ? `<div><input type="checkbox" data-action="aziende-toggle-row" data-id="${g.id}" ${State.aziendeSelected[g.id] ? 'checked' : ''}></div>` : ''}
               <div style="min-width:0">
                 <div class="ellipsis" style="font-weight:600;letter-spacing:-0.01em">${esc(g.nome)}</div>
                 <div style="font-size:11px;color:var(--text-faint)">${esc(g.settore)} · ${g.dip} dip.</div>
@@ -504,14 +510,16 @@ function contattiHTML(vm) {
               <div style="font-size:12px;color:oklch(0.55 0.01 255)">${g.nPersone} persone</div>
               <div style="font-size:11px;color:oklch(0.55 0.01 255)">${g.nextLabel}</div>
               <div class="group-actions">
-                <button class="btn-ghost btn-sm" data-action="open-detail-stop" data-id="${g.id}">Scheda</button>
-                ${rowMenuHTML('azienda-' + g.id, [
-                  { action: 'edit-company', id: g.id, label: 'Modifica' },
-                  { action: 'azienda-aggiungi-persona', id: g.id, label: '+ Persona' },
-                  { action: 'azienda-duplica', id: g.id, label: 'Duplica' },
-                  { action: 'azienda-elimina', id: g.id, label: 'Elimina', danger: true },
-                ])}
-                <span style="font-size:12px;color:var(--text-dimmer);width:12px;text-align:center" data-action="toggle-group" data-id="${g.id}">${g.chevron}</span>
+                ${!selectMode ? `
+                  <button class="btn-ghost btn-sm" data-action="open-detail-stop" data-id="${g.id}">Scheda</button>
+                  ${rowMenuHTML('azienda-' + g.id, [
+                    { action: 'edit-company', id: g.id, label: 'Modifica' },
+                    { action: 'azienda-aggiungi-persona', id: g.id, label: '+ Persona' },
+                    { action: 'azienda-duplica', id: g.id, label: 'Duplica' },
+                    { action: 'azienda-elimina', id: g.id, label: 'Elimina', danger: true },
+                  ])}
+                  <span style="font-size:12px;color:var(--text-dimmer);width:12px;text-align:center" data-action="toggle-group" data-id="${g.id}">${g.chevron}</span>
+                ` : ''}
               </div>
             </div>
             ${g.open ? `
@@ -635,6 +643,13 @@ function settingsHTML(vm) {
       </div>
       ${trashHTML(vm)}
       ${dbPathHTML(vm)}
+      <div class="card" style="border-color:oklch(0.9 0.03 25)">
+        <div class="card-title" style="color:var(--danger)">Zona pericolosa</div>
+        <div class="settings-desc">Azzera completamente il CRM: elimina tutte le aziende, i contatti, lo storico attività e i bridge contact. Utile per ripartire da un database pulito invece di lasciare i dati di esempio o dati di prova. Operazione non reversibile.</div>
+        <div class="modal-actions" style="justify-content:flex-start;margin-top:12px">
+          <button class="btn-danger" data-action="reset-open">Azzera il CRM</button>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -737,7 +752,38 @@ function importPreviewHTML(vm) {
 
 // ------------------------------------------------------------------ overlays
 function overlaysHTML(vm) {
-  return modalHTML(vm);
+  return modalHTML(vm) + resetConfirmHTML(vm);
+}
+
+function resetConfirmHTML(vm) {
+  if (!State.resetConfirmOpen) return '';
+  const step2 = State.resetConfirmStep === 2;
+  return `
+    <div class="modal-scrim" data-action="reset-cancel">
+      <div class="modal" data-action="stop" style="max-width:440px">
+        <div class="modal-title" style="color:var(--danger)">Azzera il CRM</div>
+        ${!step2 ? `
+          <div class="settings-desc" style="margin-top:6px">
+            Questa operazione elimina definitivamente TUTTE le aziende, i contatti, lo storico attività e i bridge contact. Non è reversibile.
+          </div>
+          <div class="modal-actions" style="margin-top:20px">
+            <button class="btn-text" data-action="reset-cancel">Annulla</button>
+            <button class="btn-danger" data-action="reset-step2">Continua</button>
+          </div>
+        ` : `
+          <div class="settings-desc" style="margin-top:6px">
+            Per confermare, scrivi <strong>AZZERA</strong> nel campo sottostante.
+          </div>
+          <input type="text" placeholder="AZZERA" value="${esc(State.resetConfirmText)}" data-bind="resetConfirmText" style="width:100%;margin-top:10px" class="mono" autofocus>
+          ${State.resetError ? `<div class="settings-desc" style="margin-top:8px;color:var(--danger)">${esc(State.resetError)}</div>` : ''}
+          <div class="modal-actions" style="margin-top:20px">
+            <button class="btn-text" data-action="reset-cancel">Annulla</button>
+            <button class="btn-danger" data-action="reset-confirm" ${State.resetConfirmText.trim().toUpperCase() !== 'AZZERA' ? 'disabled' : ''}>Azzera tutto</button>
+          </div>
+        `}
+      </div>
+    </div>
+  `;
 }
 
 function detailHTML(vm) {
@@ -838,20 +884,38 @@ function detailHTML(vm) {
           ${d.noContatti ? `<div class="drop-hint">Nessun referente: prospect ancora da verificare.</div>` : ''}
         </div>
 
-        <div class="section-label" style="margin-top:26px">Storico attività</div>
+        <div class="section-head-row" style="margin-top:26px">
+          <div class="section-label">Storico attività</div>
+          ${d.attivita.length ? `<button class="btn-text" data-action="clear-activities" data-id="${d.id}">Azzera storico</button>` : ''}
+        </div>
         <div class="activity-add-row">
           <input type="text" placeholder="Registra un'attività…" value="${esc(State.activityDraft)}" data-focus-id="activity-draft" data-bind="activityDraft">
+          <input type="date" value="${State.activityDateDraft || Data.today}" data-bind="activityDateDraft" style="flex:0 0 150px">
           <button class="btn" data-action="add-activity" data-id="${d.id}">Aggiungi</button>
         </div>
         <div class="activity-list">
           ${d.attivita.map(a => `
             <div class="activity-item">
               <div class="activity-rail"><span class="activity-dot"></span><span class="activity-line"></span></div>
-              <div style="min-width:0">
-                <div class="activity-meta">${a.data} · ${esc(a.tipo)}</div>
-                <div class="activity-text text-wrap">${esc(a.testo)}</div>
+              <div style="min-width:0;flex:1">
+                ${State.editingActivityId === a.id ? `
+                  <div class="activity-edit-row">
+                    <input type="date" value="${State.editingActivityDate}" data-action-input="activity-edit-date">
+                    <input type="text" value="${esc(State.editingActivityText)}" data-action-input="activity-edit-text" data-focus-id="activity-edit-${a.id}">
+                    <button class="btn-ghost btn-sm" data-action="save-activity-edit" data-id="${a.id}">Salva</button>
+                    <button class="btn-text" data-action="cancel-activity-edit">Annulla</button>
+                  </div>
+                ` : `
+                  <div class="activity-meta">${a.data} · ${esc(a.tipo)}</div>
+                  <div class="activity-text text-wrap">${esc(a.testo)}</div>
+                `}
               </div>
+              ${State.editingActivityId === a.id ? '' : rowMenuHTML('activity-' + a.id, [
+                { action: 'edit-activity', id: a.id, label: 'Modifica' },
+                { action: 'delete-activity', id: a.id, label: 'Elimina', danger: true },
+              ])}
             </div>`).join('')}
+          ${!d.attivita.length ? `<div style="font-size:12px;color:var(--text-faint);padding:8px 0">Nessuna attività registrata.</div>` : ''}
         </div>
       </div>
     </aside>

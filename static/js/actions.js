@@ -72,7 +72,34 @@ const clickActions = {
   'add-activity': (t) => {
     const text = State.activityDraft.trim();
     if (!text) return;
-    mutate(Api.addActivity(parseInt(t.dataset.id, 10), text)).then((fresh) => { if (fresh) setState({ activityDraft: '' }); });
+    const activityDate = State.activityDateDraft || Data.today;
+    mutate(Api.addActivity(parseInt(t.dataset.id, 10), text, activityDate)).then((fresh) => {
+      if (fresh) setState({ activityDraft: '', activityDateDraft: '' });
+    });
+  },
+  'edit-activity': (t) => {
+    const id = parseInt(t.dataset.id, 10);
+    const co = companyById(State.detailId);
+    const a = co ? co.attivita.find(x => x.id === id) : null;
+    if (!a) return;
+    setState({ editingActivityId: id, editingActivityText: a.testo, editingActivityDate: a.activityDate, openRowMenu: null });
+  },
+  'cancel-activity-edit': () => setState({ editingActivityId: null, editingActivityText: '', editingActivityDate: '' }),
+  'save-activity-edit': (t) => {
+    const id = parseInt(t.dataset.id, 10);
+    const text = State.editingActivityText.trim();
+    if (!text) return;
+    mutate(Api.updateActivity(id, text, State.editingActivityDate)).then((fresh) => {
+      if (fresh) setState({ editingActivityId: null, editingActivityText: '', editingActivityDate: '' });
+    });
+  },
+  'delete-activity': (t) => {
+    if (!confirm('Eliminare questa attività dallo storico?')) return;
+    mutate(Api.deleteActivity(parseInt(t.dataset.id, 10)));
+  },
+  'clear-activities': (t) => {
+    if (!confirm('Azzerare tutto lo storico attività di questa azienda? L\'operazione non è reversibile.')) return;
+    mutate(Api.clearActivities(parseInt(t.dataset.id, 10)));
   },
 
   'planner-mode': (t) => setState({ plannerMode: t.dataset.mode }),
@@ -106,6 +133,22 @@ const clickActions = {
       for (const id of ids) fresh = await Api.deleteContact(id);
       if (fresh) { Data = fresh; render(); }
       setState({ contattiSelectMode: false, contattiSelected: {} });
+    })();
+  },
+  'aziende-toggle-select': () => setState(s => ({ aziendeSelectMode: !s.aziendeSelectMode, aziendeSelected: {} })),
+  'aziende-toggle-row': (t) => {
+    const id = parseInt(t.dataset.id, 10);
+    setState(s => ({ aziendeSelected: Object.assign({}, s.aziendeSelected, { [id]: !s.aziendeSelected[id] }) }));
+  },
+  'aziende-delete-selected': () => {
+    const ids = Object.keys(State.aziendeSelected).filter(id => State.aziendeSelected[id]).map(Number);
+    if (!ids.length) return;
+    if (!confirm('Spostare ' + ids.length + ' aziende selezionate nel cestino?')) return;
+    (async () => {
+      let fresh = null;
+      for (const id of ids) fresh = await Api.deleteCompany(id);
+      if (fresh) { Data = fresh; render(); }
+      setState({ aziendeSelectMode: false, aziendeSelected: {} });
     })();
   },
   'contatto-duplica': (t) => {
@@ -225,6 +268,19 @@ const clickActions = {
       setState({ dbPathDraft: null, dbPathMessage: { ok: true, text: 'Percorso salvato: verrà usato al prossimo avvio. Chiudi e riapri l\'applicazione.' } });
     }).catch((e) => {
       setState({ dbPathMessage: { ok: false, text: e.message } });
+    });
+  },
+
+  'reset-open': () => setState({ resetConfirmOpen: true, resetConfirmStep: 1, resetConfirmText: '', resetError: null }),
+  'reset-cancel': () => setState({ resetConfirmOpen: false, resetConfirmStep: 1, resetConfirmText: '', resetError: null }),
+  'reset-step2': () => setState({ resetConfirmStep: 2 }),
+  'reset-confirm': () => {
+    if (State.resetConfirmText.trim().toUpperCase() !== 'AZZERA') return;
+    Api.resetCrm(State.resetConfirmText.trim()).then((fresh) => {
+      Data = fresh;
+      setState({ resetConfirmOpen: false, resetConfirmStep: 1, resetConfirmText: '', resetError: null, detailId: null });
+    }).catch((e) => {
+      setState({ resetError: e.message });
     });
   },
 
@@ -349,6 +405,14 @@ function wireEvents() {
     }
     if (t.dataset.actionInput === 'dossier-draft') {
       State.dossierDraft['libero' + t.dataset.id] = t.value;
+      return;
+    }
+    if (t.dataset.actionInput === 'activity-edit-text') {
+      State.editingActivityText = t.value;
+      return;
+    }
+    if (t.dataset.actionInput === 'activity-edit-date') {
+      State.editingActivityDate = t.value;
     }
   });
 

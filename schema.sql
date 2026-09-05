@@ -84,11 +84,12 @@ CREATE INDEX IF NOT EXISTS idx_stage_history_company ON stage_history(company_id
 CREATE INDEX IF NOT EXISTS idx_stage_history_stage ON stage_history(stage);
 
 CREATE TABLE IF NOT EXISTS activities (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  company_id  INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
-  data_label  TEXT NOT NULL,
-  tipo        TEXT NOT NULL,
-  testo       TEXT NOT NULL,
-  created_at  TEXT NOT NULL
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  company_id    INTEGER NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  data_label    TEXT NOT NULL,
+  activity_date TEXT NOT NULL DEFAULT '',
+  tipo          TEXT NOT NULL,
+  testo         TEXT NOT NULL,
+  created_at    TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_activities_company ON activities(company_id);
