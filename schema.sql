@@ -31,11 +31,16 @@ CREATE TABLE IF NOT EXISTS companies (
   next_tipo        TEXT,
   next_data        TEXT,
   next_stadio      TEXT,
+  email            TEXT NOT NULL DEFAULT '',
+  sito_web         TEXT NOT NULL DEFAULT '',
+  note             TEXT NOT NULL DEFAULT '',
+  deleted_at       TEXT,
   stage_entered_at TEXT NOT NULL,
   created_at       TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_companies_bridge ON companies(bridge_id);
 CREATE INDEX IF NOT EXISTS idx_companies_stage ON companies(stage);
+CREATE INDEX IF NOT EXISTS idx_companies_deleted ON companies(deleted_at);
 
 CREATE TABLE IF NOT EXISTS contacts (
   id                        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,9 +69,11 @@ CREATE TABLE IF NOT EXISTS contacts (
   dossier_argomenti_utili   TEXT NOT NULL DEFAULT '',
   dossier_argomenti_evitare TEXT NOT NULL DEFAULT '',
   dossier_eventi            TEXT NOT NULL DEFAULT '',
-  dossier_libero            TEXT NOT NULL DEFAULT ''
+  dossier_libero            TEXT NOT NULL DEFAULT '',
+  deleted_at                TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_contacts_company ON contacts(company_id);
+CREATE INDEX IF NOT EXISTS idx_contacts_deleted ON contacts(deleted_at);
 
 CREATE TABLE IF NOT EXISTS stage_history (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,

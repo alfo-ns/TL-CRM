@@ -436,7 +436,10 @@ function contattiHTML(vm) {
               ${r.hasNext ? `<div class="next-chip" style="background:${r.nextBg};color:${r.nextFg}"><div style="font-weight:600">${r.nextTipo} · ${r.nextQuando}</div><div style="opacity:.85">${esc(r.owner)}</div></div>` : `<span style="font-size:11px;color:var(--text-faint)">—</span>`}
             </div>
             <div>${!selectMode ? rowMenuHTML('contatto-' + r.id, [
+              { action: 'edit-contact', id: r.id, label: 'Modifica' },
+              { action: 'edit-dossier', id: r.id, label: 'Dossier' },
               { action: 'contatto-duplica', id: r.id, label: 'Duplica' },
+              { action: 'delete-contact', id: r.id, label: 'Elimina', danger: true },
             ]) : ''}</div>
           </div>`).join('')}
         ${vm.noRows ? `<div class="empty-state">Nessun contatto corrisponde ai filtri.</div>` : ''}
@@ -456,7 +459,12 @@ function contattiHTML(vm) {
               <div style="font-size:11px;color:oklch(0.55 0.01 255)">${g.nextLabel}</div>
               <div class="group-actions">
                 <button class="btn-ghost btn-sm" data-action="open-detail-stop" data-id="${g.id}">Scheda</button>
-                <span style="font-size:12px;color:var(--text-dimmer);width:12px;text-align:center">${g.chevron}</span>
+                ${rowMenuHTML('azienda-' + g.id, [
+                  { action: 'azienda-aggiungi-persona', id: g.id, label: '+ Persona' },
+                  { action: 'azienda-duplica', id: g.id, label: 'Duplica' },
+                  { action: 'azienda-elimina', id: g.id, label: 'Elimina', danger: true },
+                ])}
+                <span style="font-size:12px;color:var(--text-dimmer);width:12px;text-align:center" data-action="toggle-group" data-id="${g.id}">${g.chevron}</span>
               </div>
             </div>
             ${g.open ? `
@@ -559,7 +567,37 @@ function settingsHTML(vm) {
         </div>
         ${importPreviewHTML(vm)}
       </div>
+      ${trashHTML(vm)}
       ${dbPathHTML(vm)}
+    </div>
+  `;
+}
+
+function trashHTML(vm) {
+  return `
+    <div class="card">
+      <div class="card-title">Cestino${vm.trashCount ? ' · ' + vm.trashCount : ''}</div>
+      <div class="settings-desc">Aziende e contatti eliminati restano qui finché non li ripristini o li elimini definitivamente.</div>
+      ${vm.trashCompanies.length || vm.trashContacts.length ? `
+        <div class="trash-list">
+          ${vm.trashCompanies.map(c => `
+            <div class="trash-row">
+              <div class="ellipsis"><strong>${esc(c.nome)}</strong> · ${esc(c.settore)} · ${c.valore}</div>
+              <div class="trash-row-actions">
+                <button class="btn-ghost btn-sm" data-action="trash-restore-company" data-id="${c.id}">Ripristina</button>
+                <button class="btn-danger btn-sm" data-action="trash-purge-company" data-id="${c.id}">Elimina definitivamente</button>
+              </div>
+            </div>`).join('')}
+          ${vm.trashContacts.map(p => `
+            <div class="trash-row">
+              <div class="ellipsis">${esc(p.nome)} · ${esc(p.ruolo)} · ${esc(p.azienda)}</div>
+              <div class="trash-row-actions">
+                <button class="btn-ghost btn-sm" data-action="trash-restore-contact" data-id="${p.id}">Ripristina</button>
+                <button class="btn-danger btn-sm" data-action="trash-purge-contact" data-id="${p.id}">Elimina definitivamente</button>
+              </div>
+            </div>`).join('')}
+        </div>
+      ` : `<div class="settings-desc" style="margin-top:10px">Il cestino è vuoto.</div>`}
     </div>
   `;
 }
@@ -659,6 +697,12 @@ function detailHTML(vm) {
           <span>In gestione a <strong>${esc(d.gestitoDa)}</strong></span>
           ${d.hasBridge ? `<span style="color:oklch(0.45 0.11 255)">Presentata da ${esc(d.bridge)}</span>` : ''}
         </div>
+        ${d.email || d.sitoWeb ? `
+        <div class="drawer-meta-row">
+          ${d.email ? `<span>${esc(d.email)}</span>` : ''}
+          ${d.sitoWeb ? `<span>${esc(d.sitoWeb)}</span>` : ''}
+        </div>` : ''}
+        ${d.note ? `<div class="person-note text-wrap" style="margin-top:10px">${esc(d.note)}</div>` : ''}
       </div>
       <div class="drawer-body">
         <div class="next-move-box">
@@ -759,7 +803,7 @@ function modalHTML(vm) {
   if (!State.modal) return '';
   const f = Object.assign({
     nome: '', cognome: '', settore: '', dip: '', valore: '', stage: 'prospect', ruolo: '', email: '', tel: '',
-    linkedin: '', social: '', note: '', portatoDa: (Data.operators[0] || {}).nome || '', gestitoDa: (Data.operators[0] || {}).nome || '',
+    linkedin: '', social: '', note: '', sitoWeb: '', portatoDa: (Data.operators[0] || {}).nome || '', gestitoDa: (Data.operators[0] || {}).nome || '',
     nextTipo: 'followup', nextData: '', nextStadio: 'lead', relazione: 'Referral',
     fonte: '', temperatura: 'Freddo', potere: 'Da capire', orario: '', interessi: '', competitor: '',
     argomentiUtili: '', argomentiEvitare: '', eventi: '', libero: '',
@@ -781,6 +825,9 @@ function modalHTML(vm) {
       ${field('In gestione a', 'gestitoDa', f.gestitoDa, { type: 'select', options: operatorOptionsHTML(f.gestitoDa, false) })}
       ${field('Prossima mossa', 'nextTipo', f.nextTipo, { type: 'select', options: actionOptionsHTML(f.nextTipo) })}
       ${field('Quando', 'nextData', f.nextData, { type: 'date' })}
+      ${field('Email', 'email', f.email)}
+      ${field('Sito web', 'sitoWeb', f.sitoWeb, { placeholder: 'es. www.azienda.it' })}
+      ${field('Note', 'note', f.note, { type: 'textarea', span2: true })}
     </div>`;
   } else if (State.modal === 'contact') {
     const dettagliTab = State.modalTab === 'dettagli';
