@@ -17,6 +17,13 @@ CONFIG = config.load_config()
 app = Flask(__name__, static_folder="static", template_folder="templates")
 db.init_app(app)
 
+# Runs on import, not just under `python app.py`: a WSGI server (Gunicorn,
+# etc.) imports this module directly and never executes the __main__ block
+# below, so the schema/migration must happen here or the app never gets a
+# database.
+with app.app_context():
+    db.init_db(seed_if_empty=False)
+
 
 # ---------------------------------------------------------------- serializers
 
@@ -828,8 +835,6 @@ def _open_browser(host, port):
 
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.init_db(seed_if_empty=False)
     if CONFIG["open_browser"]:
         threading.Timer(1.0, _open_browser, args=(CONFIG["host"], CONFIG["port"])).start()
     app.run(host=CONFIG["host"], port=CONFIG["port"], debug=False)
