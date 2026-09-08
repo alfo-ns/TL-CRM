@@ -197,7 +197,7 @@ function computeViewModel() {
     detail = {
       id: co.id, nome: co.nome, settore: co.settore, dip: co.dip, stage: co.stage, valore: H.eur(co.valore), giorni: co.giorni,
       portatoDa: co.portatoDa, gestitoDa: co.gestitoDa, hasBridge: !!brDetail, bridge: brDetail ? brDetail.nome : '',
-      email: co.email, sitoWeb: co.sitoWeb, note: co.note,
+      email: co.email, sitoWeb: co.sitoWeb, note: co.note, piva: co.piva, cf: co.cf,
       nextTipo: co.next ? co.next.tipo : 'followup', nextData: co.next ? co.next.data : '',
       nextStadioId: co.next ? co.next.stadio : co.stage, nextQuando: co.next && co.next.data ? H.quando(co.next.data) : 'da pianificare',
       noContatti: H.contactsOf(co.id).length === 0,

@@ -837,6 +837,11 @@ function detailHTML(vm) {
           ${d.email ? `<span>${esc(d.email)}</span>` : ''}
           ${d.sitoWeb ? `<span>${esc(d.sitoWeb)}</span>` : ''}
         </div>` : ''}
+        ${d.piva || d.cf ? `
+        <div class="drawer-meta-row">
+          ${d.piva ? `<span>P.IVA <strong class="mono">${esc(d.piva)}</strong></span>` : ''}
+          ${d.cf && d.cf !== d.piva ? `<span>C.F. <strong class="mono">${esc(d.cf)}</strong></span>` : ''}
+        </div>` : ''}
         ${d.note ? `<div class="person-note text-wrap" style="margin-top:10px">${esc(d.note)}</div>` : ''}
       </div>
       <div class="drawer-body">
@@ -958,7 +963,8 @@ function modalHTML(vm) {
   if (!State.modal) return '';
   const f = Object.assign({
     nome: '', cognome: '', settore: '', dip: '', valore: '', stage: 'prospect', ruolo: '', email: '', tel: '',
-    linkedin: '', social: '', note: '', sitoWeb: '', portatoDa: (Data.operators[0] || {}).nome || '', gestitoDa: (Data.operators[0] || {}).nome || '',
+    linkedin: '', social: '', note: '', sitoWeb: '', piva: '', cf: '', cfSameAsPiva: true,
+    portatoDa: (Data.operators[0] || {}).nome || '', gestitoDa: (Data.operators[0] || {}).nome || '',
     nextTipo: 'followup', nextData: '', nextStadio: 'lead', relazione: 'Referral',
     fonte: '', temperatura: 'Freddo', potere: 'Da capire', orario: '', interessi: '', competitor: '',
     argomentiUtili: '', argomentiEvitare: '', eventi: '', libero: '',
@@ -982,6 +988,17 @@ function modalHTML(vm) {
       ${field('Quando', 'nextData', f.nextData, { type: 'date' })}
       ${field('Email', 'email', f.email)}
       ${field('Sito web', 'sitoWeb', f.sitoWeb, { placeholder: 'es. www.azienda.it' })}
+      ${field('Partita IVA', 'piva', f.piva, { mono: true })}
+      <label>
+        <span class="flabel" style="display:flex;align-items:center;gap:6px;justify-content:space-between">
+          <span>Codice Fiscale</span>
+          <span style="display:flex;align-items:center;gap:5px;text-transform:none;letter-spacing:normal;font-weight:500;cursor:pointer" data-action="toggle-cf-same">
+            <input type="checkbox" data-action="toggle-cf-same" ${f.cfSameAsPiva ? 'checked' : ''}>
+            Uguale alla P.IVA
+          </span>
+        </span>
+        <input name="cf" type="text" value="${esc(f.cfSameAsPiva ? f.piva : f.cf)}" data-bind="form.cf" class="mono" ${f.cfSameAsPiva ? 'disabled' : ''}>
+      </label>
       ${field('Note', 'note', f.note, { type: 'textarea', span2: true })}
     </div>`;
   } else if (State.modal === 'contact') {

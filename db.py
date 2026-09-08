@@ -99,6 +99,8 @@ def _migrate(conn):
             ("email", "TEXT NOT NULL DEFAULT ''"),
             ("sito_web", "TEXT NOT NULL DEFAULT ''"),
             ("note", "TEXT NOT NULL DEFAULT ''"),
+            ("piva", "TEXT NOT NULL DEFAULT ''"),
+            ("cf", "TEXT NOT NULL DEFAULT ''"),
             ("deleted_at", "TEXT"),
         ):
             if col not in company_cols:

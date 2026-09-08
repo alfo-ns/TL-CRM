@@ -23,7 +23,7 @@ COMPANY_HEADERS = [
     "ID", "Nome", "Settore", "Dipendenti", "Valore", "Stadio",
     "Portata da", "Gestito da",
     "Prossima azione", "Data prossima azione", "Stadio obiettivo",
-    "Email", "Sito web", "Note",
+    "Email", "Sito web", "Note", "Partita IVA", "Codice Fiscale",
     "Bridge collegato",
 ]
 CONTACT_HEADERS = [
@@ -70,7 +70,7 @@ def build_workbook(conn):
             c["id"], c["nome"], c["settore"], c["dip"], c["valore"], c["stage"],
             c["portato_da"], c["gestito_da"],
             c["next_tipo"] or "", c["next_data"] or "", c["next_stadio"] or "",
-            c["email"], c["sito_web"], c["note"],
+            c["email"], c["sito_web"], c["note"], c["piva"], c["cf"],
             bridge_name,
         ])
     _autosize(ws)
@@ -239,6 +239,7 @@ def parse_workbook(file_stream, conn):
             "next_data": _date_str(c["Data prossima azione"]) or None,
             "next_stadio": next_stadio or None,
             "email": _str(c["Email"]), "sito_web": _str(c["Sito web"]), "note": _str(c["Note"]),
+            "piva": _str(c["Partita IVA"]), "cf": _str(c["Codice Fiscale"]),
         }
         row_id = _int(c["ID"], default=None) if c["ID"] not in (None, "") else None
         bridge_name = _str(c["Bridge collegato"])
@@ -378,10 +379,11 @@ def apply_import(conn, plan, today_iso, today_it):
         stage_logic.move_stage(conn, row_id, fields["stage"], today_iso, log_activity)
         conn.execute(
             "UPDATE companies SET nome=?, settore=?, dip=?, valore=?, portato_da=?, gestito_da=?, "
-            "next_tipo=?, next_data=?, next_stadio=?, email=?, sito_web=?, note=? WHERE id=?",
+            "next_tipo=?, next_data=?, next_stadio=?, email=?, sito_web=?, note=?, piva=?, cf=? WHERE id=?",
             (fields["nome"], fields["settore"], fields["dip"], fields["valore"],
              fields["portato_da"], fields["gestito_da"], fields["next_tipo"], fields["next_data"],
-             fields["next_stadio"], fields["email"], fields["sito_web"], fields["note"], row_id),
+             fields["next_stadio"], fields["email"], fields["sito_web"], fields["note"],
+             fields["piva"], fields["cf"], row_id),
         )
 
     new_company_ids = []
@@ -389,11 +391,12 @@ def apply_import(conn, plan, today_iso, today_it):
         max_idx = 0 if fields["stage"] == "perso" else STAGE_INDEX[fields["stage"]]
         cur = conn.execute(
             "INSERT INTO companies (nome, settore, dip, valore, stage, max_stage_index, portato_da, gestito_da, "
-            "bridge_id, next_tipo, next_data, next_stadio, email, sito_web, note, stage_entered_at, created_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "bridge_id, next_tipo, next_data, next_stadio, email, sito_web, note, piva, cf, stage_entered_at, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (fields["nome"], fields["settore"], fields["dip"], fields["valore"], fields["stage"], max_idx,
              fields["portato_da"], fields["gestito_da"], fields["next_tipo"], fields["next_data"],
-             fields["next_stadio"], fields["email"], fields["sito_web"], fields["note"], today_iso, today_iso),
+             fields["next_stadio"], fields["email"], fields["sito_web"], fields["note"],
+             fields["piva"], fields["cf"], today_iso, today_iso),
         )
         new_id = cur.lastrowid
         new_company_ids.append(new_id)
