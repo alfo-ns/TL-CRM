@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS companies (
   email            TEXT NOT NULL DEFAULT '',
   sito_web         TEXT NOT NULL DEFAULT '',
   note             TEXT NOT NULL DEFAULT '',
+  piva             TEXT NOT NULL DEFAULT '',
+  cf               TEXT NOT NULL DEFAULT '',
   deleted_at       TEXT,
   stage_entered_at TEXT NOT NULL,
   created_at       TEXT NOT NULL

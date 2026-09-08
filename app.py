@@ -47,6 +47,8 @@ def serialize_company(row, today):
         "email": row["email"],
         "sitoWeb": row["sito_web"],
         "note": row["note"],
+        "piva": row["piva"],
+        "cf": row["cf"],
         "giorni": giorni,
         "createdAt": row["created_at"],
         "next": next_,
@@ -244,8 +246,8 @@ def create_company():
         now_iso = today_iso()
         cur = conn.execute(
             "INSERT INTO companies (nome, settore, dip, valore, stage, max_stage_index, portato_da, gestito_da, "
-            "bridge_id, next_tipo, next_data, next_stadio, email, sito_web, note, stage_entered_at, created_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "bridge_id, next_tipo, next_data, next_stadio, email, sito_web, note, piva, cf, stage_entered_at, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 body.get("nome") or "Nuova azienda",
                 body.get("settore") or "—",
@@ -261,6 +263,8 @@ def create_company():
                 body.get("email") or "",
                 body.get("sitoWeb") or "",
                 body.get("note") or "",
+                body.get("piva") or "",
+                body.get("cf") or "",
                 now_iso,
                 now_iso,
             ),
@@ -311,11 +315,13 @@ def update_company(company_id):
             "email": body.get("email", row["email"]),
             "sito_web": body.get("sitoWeb", row["sito_web"]),
             "note": body.get("note", row["note"]),
+            "piva": body.get("piva", row["piva"]),
+            "cf": body.get("cf", row["cf"]),
         }
         conn.execute(
-            "UPDATE companies SET nome=?, settore=?, dip=?, valore=?, portato_da=?, gestito_da=?, email=?, sito_web=?, note=? WHERE id=?",
+            "UPDATE companies SET nome=?, settore=?, dip=?, valore=?, portato_da=?, gestito_da=?, email=?, sito_web=?, note=?, piva=?, cf=? WHERE id=?",
             (fields["nome"], fields["settore"], fields["dip"], fields["valore"], fields["portato_da"], fields["gestito_da"],
-             fields["email"], fields["sito_web"], fields["note"], company_id),
+             fields["email"], fields["sito_web"], fields["note"], fields["piva"], fields["cf"], company_id),
         )
         if "nextData" in body:
             next_tipo, next_data, next_stadio = _parse_next(body)

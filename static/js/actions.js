@@ -42,6 +42,7 @@ const clickActions = {
       modal: 'company', editId: co.id,
       form: Object.assign({}, co, {
         nextTipo: co.next ? co.next.tipo : 'followup', nextData: co.next ? co.next.data : '',
+        cfSameAsPiva: co.cf === co.piva,
       }),
     });
   },
@@ -287,6 +288,7 @@ const clickActions = {
 
   'modal-tab': (t) => setState({ modalTab: t.dataset.tab }),
   'close-modal': () => setState({ modal: null, editId: null, form: {} }),
+  'toggle-cf-same': () => setState(s => ({ form: Object.assign({}, s.form, { cfSameAsPiva: !s.form.cfSameAsPiva }) })),
   'stop': () => {},
   'save-modal': () => saveModal(),
 };
@@ -324,6 +326,7 @@ function saveModal() {
       portatoDa: f.portatoDa, gestitoDa: f.gestitoDa,
       nextTipo: f.nextTipo, nextData: f.nextData || '',
       email: f.email, sitoWeb: f.sitoWeb, note: f.note,
+      piva: f.piva, cf: f.cfSameAsPiva ? f.piva : f.cf,
     };
     if (State.editId) {
       mutate(Api.updateCompany(State.editId, payload)).then((fresh) => { if (fresh) setState({ modal: null, editId: null, form: {} }); });
